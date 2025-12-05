@@ -1,0 +1,71 @@
+<div class="rack-details-container">
+<!-- Header Section -->
+    <div class="details-header">
+        <div class="header-content">
+            <h1 class="device-name">{{ rack.rack_name }}</h1>
+            <span class="badge badge-success">{{ rack.status }}</span>
+
+        </div>
+    </div>
+
+    <div class="details-grid">
+        <!-- LEFT COLUMN (Rack Info Only) -->
+        <div class="left-column">
+            <div class="details-section primary-section">
+                <h2 class="section-title">Rack Info</h2>
+
+                <div class="info-group">
+                    <div class="info-row"><span class="label">Rack Name</span><span class="value">{{ rack.rack_name
+                            }}</span></div>
+                    <div class="info-row"><span class="label">Location</span><span class="value">{{ rack.location
+                            }}</span></div>
+                    <div class="info-row"><span class="label">Building</span><span class="value">{{ rack.building
+                            }}</span></div>
+                    <div class="info-row"><span class="label">Wing</span><span class="value">{{ rack.wing }}</span>
+                    </div>
+                    <div class="info-row"><span class="label">Floor</span><span class="value">{{ rack.floor }}</span>
+                    </div>
+                    <div class="info-row"><span class="label">Data Centre</span><span class="value">{{ rack.data_centre
+                            }}</span></div>
+                    <div class="info-row"><span class="label">Status</span><span class="value">{{ rack.status }}</span>
+                    </div>
+                    <div class="info-row"><span class="label">Width (mm)</span><span class="value">{{ rack.width_mm
+                            }}</span></div>
+                    <div class="info-row"><span class="label">Height (U)</span><span class="value">{{ rack.height_u
+                            }}</span></div>
+                    <div class="info-row"><span class="label">No. of Devices</span><span class="value">{{
+                            rack.device_count }}</span></div>
+                    <div class="info-row"><span class="label">Space Utilisation</span><span class="value">{{
+                            rack.space_utilisation }}</span></div>
+                    <div class="info-row"><span class="label">Available Space</span><span class="value">{{
+                            rack.available_space }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN (Rack Elevation) -->
+        <div class="right-column">
+            <div class="details-section rack-section">
+                <h2 class="section-title">Rack Views</h2>
+
+                <div class="rack-views-container">
+                    <div class="rack-view-item">
+                        <app-dynamic-rack [units]="42" [occupied]="getOccupied()" [viewType]="'front'" [title]="'Front'"
+                            (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
+                    </div>
+                    <div class="rack-view-item">
+                        <app-dynamic-rack [units]="42" [occupied]="getOccupied()" [viewType]="'back'" [title]="'Back'"
+                            (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comments Section -->
+    <div class="details-section comments-section" *ngIf="rack.comments">
+        <h2 class="section-title">Comments</h2>
+        <p class="comments-text">{{ rack.comments }}</p>
+    </div>
+
+</div>

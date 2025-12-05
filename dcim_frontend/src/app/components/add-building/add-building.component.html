@@ -1,0 +1,59 @@
+<div class="page-container">
+
+    <div class="device-card">
+      <h2 class="section-title">{{ editData ? 'Edit Building' : 'Add Building' }}</h2>
+  
+      <form [formGroup]="buildingForm" class="device-form" (ngSubmit)="saveBuilding()">
+  
+        <div class="form-grid">
+  
+          <!-- Building ID -->
+          <div class="form-row">
+            <label class="form-label">Building ID <span class="required">*</span></label>
+            <input type="text" formControlName="building_id" />
+          </div>
+  
+          <!-- Building Name -->
+          <div class="form-row">
+            <label class="form-label">Building Name <span class="required">*</span></label>
+            <input type="text" formControlName="name" />
+          </div>
+  
+          <!-- Status -->
+          <div class="form-row">
+            <label class="form-label">Status <span class="required">*</span></label>
+            <select formControlName="status">
+              <option value="">Select Status</option>
+              <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+  
+          <!-- Location ID -->
+          <div class="form-row">
+            <label class="form-label">Location ID <span class="required">*</span></label>
+            <select formControlName="location_id">
+              <option value="">Select Location</option>
+              <!-- <option *ngFor="let loc of locations" [value]="loc.id">
+                {{ loc.name }}
+              </option> -->
+            </select>
+          </div>
+  
+        </div>
+  
+        <div class="btn-row">
+          <button class="btn cancel" type="button" (click)="onCancel()">Cancel</button>
+  
+          <button class="btn primary" type="submit">
+            {{ editData ? 'Update' : 'Save' }}
+          </button>
+  
+          <button class="btn primary-outline" *ngIf="!editData" type="button" (click)="saveAndAddAnother()">
+            Save & Add Another
+          </button>
+        </div>
+  
+      </form>
+    </div>
+  </div>
+  

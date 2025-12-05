@@ -1,0 +1,65 @@
+<div class="dynamic-rack-container">
+  <div class="rack-header">
+    <h3 class="rack-title">{{ title }} - {{ viewType === 'front' ? 'Front View' : 'Back View' }}</h3>
+    <span class="rack-info">Rack: {{ units }}U — Devices: {{ occupied.length || 0 }}</span>
+  </div>
+
+  <div class="rack-frame">
+    <div class="rack-slots-wrapper">
+      <div class="rack-numbers">
+        <div *ngFor="let slot of getSlots()" class="slot-number">{{ slot }}</div>
+      </div>
+
+      <div class="rack-slots">
+        <ng-container *ngFor="let slot of getSlots(); let index = index">
+
+          <div class="rack-slot"
+               [attr.data-slot]="slot"
+               [class.has-device]="isOccupied(slot)"
+               (click)="onSlotClick(slot)">
+            <!-- Check if this slot is the start of an occupied device -->
+            <ng-container *ngIf="isOccupied(slot) as occ">
+              <!-- Only render device block at the topmost slot (highest slot number in the range) -->
+              <ng-container *ngIf="shouldRenderBlock(slot, occ)">
+                <div 
+                  class="device-block" 
+                  [ngStyle]="{ height: (occ.height * 28) + 'px' }" 
+                  [title]="occ.label"
+                  (click)="onDeviceClick(occ)"
+                  [matTooltip]="occ.label"
+                  matTooltipPosition="right">
+                  <div class="device-label">{{ occ.label }}</div>
+                </div>
+              </ng-container>
+            </ng-container>
+            <div class="empty-slot-hover" *ngIf="!isOccupied(slot)">
+              Add Device
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <div class="rack-bottom">
+  
+    <!-- LEGEND -->
+    <div class="rack-legend">
+      <div class="legend-item">
+        <div class="legend-color available"></div>
+        <span class="legend-label">Available</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-color occupied"></div>
+        <span class="legend-label">Occupied</span>
+      </div>
+    </div>
+  
+    <!-- DOWNLOAD PNG BUTTON -->
+    <button class="download-btn" (click)="downloadPng()">
+      Download PNG
+    </button>
+  
+  </div>
+  
+</div>

@@ -1,0 +1,36 @@
+<nav class="sidebar" [class.collapsed]="isCollapsed">
+
+  <div class="top-bar">
+    <img src="assets/images/organization3.png" class="app-logo cursor" alt="DCIM Logo" [routerLink]="['/dashboard']" />
+    <span class="app-title cursor" [routerLink]="['/dashboard']" *ngIf="!isCollapsed">DCIM</span>
+    <div class="toggle-btn" (click)="toggleSidebar()">
+      <img *ngIf="!isCollapsed" src="assets/images/left_arrow_1.png" class="collapse-icon" alt="collapse" />
+      <img *ngIf="isCollapsed" src="assets/images/right_arrow_1.png" class="collapse-icon" alt="expand" />
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <ul class="menu-list">
+    <li *ngFor="let menu of menuList" class="menu-item">
+      <div 
+        class="menu-header" 
+        [class.active-menu]="hasActiveSubmenu(menu)"
+        (click)="onMenuHeaderClick(menu)">
+        <img class="menu-icon" [src]="`assets/images/${menu?.icon}`" alt="" />
+        <span *ngIf="!isCollapsed">{{ menu?.MenuHeaderName }}</span>
+        <span class="arrow" *ngIf="!isCollapsed" [class.open]="menu.open">›</span>
+      </div>
+
+      <!-- Submenu -->
+      <ul class="submenu-list" *ngIf="menu.open && !isCollapsed">
+        <li *ngFor="let sub of menu?.sub_menu_details" class="submenu-item cursor">
+          <a 
+            [class.active-sub]="isActiveSubmenu(sub)"
+            (click)="onClickMenu(menu?.MenuHeaderName, sub)">
+            {{ sub?.display_name }}
+          </a>
+        </li>
+      </ul>
+    </li>
+  </ul>
+</nav>

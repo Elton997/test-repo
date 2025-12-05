@@ -1,0 +1,4 @@
+<app-dynamic-table [title]="'Locations'" *ngIf="!loading" [columns]="columns" [data]="locations"
+  [totalCount]="totalCount" [pageSize]="pageSize" [offset]="offset" [filterConfig]="filterConfig" [appliedFilters]="appliedFilters"
+  (pageChange)="onPageChange($event)" (filtersChanged)="onFiltersChanged($event)">
+</app-dynamic-table>

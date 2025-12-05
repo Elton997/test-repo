@@ -1,0 +1,331 @@
+.sidebar {
+  width: 260px;
+  background: linear-gradient(180deg, var(--dcim-navy) 0%, var(--dcim-navy-dark) 100%);
+  color: #fff;
+  height: 100vh;
+  padding: 15px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  transition: width 0.3s var(--ease-out-expo), padding 0.3s var(--ease-out-expo);
+  position: relative;
+
+  /* Decorative gradient accent */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--dcim-gold) 0%, transparent 50%, var(--dcim-gold) 100%);
+    opacity: 0.3;
+  }
+
+  &.collapsed {
+    width: 70px;
+    padding: 15px 10px;  
+    overflow: visible !important; 
+  }
+}
+
+/* Logo Section */
+.logo-container {
+  text-align: center;
+  margin-bottom: 10px;
+
+  .app-logo {
+    width: 45px;
+    height: auto;
+    transition: width 0.25s ease;
+  }
+}
+
+.sidebar.collapsed .app-logo {
+  width: 30px;
+}
+
+/* Sidebar Title */
+.app-title {
+  font-size: 25px;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0.95;
+  transition: opacity 0.2s ease;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sidebar.collapsed .app-title {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+/* Scrollbar styling */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Menu */
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-item {
+  margin-bottom: 8px;
+  animation: fadeInUp 0.4s var(--ease-out-expo) both;
+  
+  @for $i from 1 through 10 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 50}ms;
+    }
+  }
+}
+
+/* Main Menu Row */
+.menu-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 12px 14px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.25s var(--ease-out-expo);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transform: translateX(4px);
+    
+    .menu-icon {
+      transform: scale(1.1);
+    }
+  }
+  
+  &:active {
+    transform: translateX(2px);
+  }
+  
+  /* Active menu header (has active submenu) */
+  &.active-menu {
+    background: rgba(241, 183, 14, 0.15);
+    border: 1px solid rgba(241, 183, 14, 0.25);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 60%;
+      background: var(--dcim-gold);
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .menu-icon {
+      filter: drop-shadow(0 2px 6px rgba(241, 183, 14, 0.4));
+    }
+  }
+}
+
+/* Hide menu text in collapsed mode */
+.sidebar.collapsed .menu-header span {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  transition: opacity 0.15s ease;
+}
+
+.menu-icon {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: transform 0.2s var(--ease-out-expo);
+}
+
+.sidebar.collapsed .menu-icon {
+  margin-right: 0;
+}
+
+/* Arrow Animation */
+.arrow {
+  margin-left: auto;
+  transition: transform 0.3s var(--ease-out-expo);
+  transform: rotate(90deg);
+  opacity: 0.7;
+  font-size: 18px;
+}
+
+.arrow.open {
+  transform: rotate(270deg);
+  opacity: 1;
+}
+
+/* Hide arrow when collapsed */
+.sidebar.collapsed .arrow {
+  display: none;
+}
+
+/* Submenu */
+.submenu-list {
+  list-style: none;
+  padding-left: 40px;
+  margin-top: 6px;
+  border-left: 2px solid rgba(241, 183, 14, 0.3);
+  margin-left: 12px;
+  padding-top: 6px;
+  transition: all 0.3s var(--ease-out-expo);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Hide submenu completely in collapsed mode */
+.sidebar.collapsed .submenu-list {
+  display: none !important;
+}
+
+.submenu-item {
+  padding: 4px 0;
+
+  a {
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    font-weight: 500;
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.2s var(--ease-out-expo);
+    position: relative;
+
+    &:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+  }
+
+  a.active-sub {
+    background: rgba(241, 183, 14, 0.2);
+    color: #fff;
+    font-weight: 600;
+    border-left: 3px solid var(--dcim-gold);
+    padding-left: 12px;
+    margin-left: -3px;
+  }
+}
+
+.toggle-btn {
+  text-align: right;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  cursor: pointer;
+
+  .collapse-icon {
+    width: 26px;
+    height: 26px;
+    transition: transform 0.2s var(--ease-out-expo), filter 0.2s ease;
+    overflow: visible !important;
+  }
+  
+  &:hover .collapse-icon {
+    transform: scale(1.15);
+    opacity: 0.9;
+    filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.3));
+  }
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  
+  /* Gold accent line */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--dcim-gold), transparent);
+    border-radius: 1px;
+  }
+}
+
+/* Logo stays fixed size */
+.top-bar .app-logo {
+  width: 38px;
+  height: auto;
+  transition: transform 0.2s var(--ease-out-expo);
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* Title styling */
+.top-bar .app-title {
+  font-size: 22px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #fff;
+  letter-spacing: 0.08em;
+}
+
+/* Hide title when collapsed */
+.sidebar.collapsed .app-title {
+  display: none;
+}
+
+/* Toggle button stays on right */
+.top-bar .toggle-btn {
+  cursor: pointer;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.top-bar .collapse-icon {
+  width: 24px;
+  height: 20px;
+  transition: transform 0.2s var(--ease-out-expo), filter 0.2s ease;
+  overflow: visible !important;
+}
+
+.top-bar:hover .collapse-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.3));
+}

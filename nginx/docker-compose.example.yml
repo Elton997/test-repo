@@ -1,0 +1,81 @@
+# Docker Compose Example for DCIM Application
+# This is an example docker-compose file showing how to integrate nginx with backend and frontend
+# Copy this to the root directory and customize as needed
+
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: dcim-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Mount frontend build files
+      - ./dcim_frontend/dist:/usr/share/nginx/html:ro
+      # Mount SSL certificates (create this directory and add your certs)
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      # Optional: Mount custom configs for runtime modifications
+      # - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - backend
+    networks:
+      - dcim-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # FastAPI Backend Service
+  backend:
+    build:
+      context: ./dcim_backend_fastapi
+      dockerfile: Dockerfile  # Create this if not exists
+    container_name: dcim-backend
+    expose:
+      - "8000"
+    environment:
+      # Add your backend environment variables here
+      - APP_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      # Add other env vars as needed
+    networks:
+      - dcim-network
+    restart: unless-stopped
+    # volumes:
+    #   - ./dcim_backend_fastapi/app:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Database (example - adjust based on your database setup)
+  # database:
+  #   image: oracle/database:19.3.0-ee
+  #   container_name: dcim-database
+  #   environment:
+  #     - ORACLE_SID=ORCLCDB
+  #     - ORACLE_PDB=ORCLPDB1
+  #   volumes:
+  #     - oracle-data:/opt/oracle/oradata
+  #   networks:
+  #     - dcim-network
+  #   restart: unless-stopped
+
+networks:
+  dcim-network:
+    driver: bridge
+    name: dcim-network
+
+# volumes:
+#   oracle-data:
+

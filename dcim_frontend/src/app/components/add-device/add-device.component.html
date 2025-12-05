@@ -1,0 +1,227 @@
+<div class="page-container">
+
+  <div class="device-card">
+    <h2 class="section-title">Device</h2>
+
+    <form [formGroup]="deviceForm" class="device-form" (ngSubmit)="saveDevice()">
+
+      <div class="form-grid">
+
+        <!-- Device Name -->
+        <div class="form-row">
+          <label class="form-label">Device Name <span class="required">*</span></label>
+          <input type="text" formControlName="deviceName" />
+        </div>
+
+        <!-- Status -->
+        <div class="form-row">
+          <label class="form-label">Status <span class="required">*</span></label>
+          <select formControlName="status">
+            <option value="">Select status</option>
+            <option *ngFor="let s of statuses" [ngValue]="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <!-- Location -->
+        <div class="form-row">
+          <label class="form-label">Location <span class="required">*</span></label>
+          <select formControlName="location">
+            <option value="">Select</option>
+            <option *ngFor="let v of locations" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Building -->
+        <div class="form-row">
+          <label class="form-label">Building <span class="required">*</span></label>
+          <select formControlName="building">
+            <option value="">Select</option>
+            <option *ngFor="let v of buildings" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Wing -->
+        <div class="form-row">
+          <label class="form-label">Wing <span class="required">*</span></label>
+          <select formControlName="wing">
+            <option value="">Select</option>
+            <option *ngFor="let v of wings" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Floor -->
+        <div class="form-row">
+          <label class="form-label">Floor <span class="required">*</span></label>
+          <select formControlName="floor">
+            <option value="">Select</option>
+            <option *ngFor="let v of floors" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Room -->
+        <div class="form-row">
+          <label class="form-label">Room No <span class="required">*</span></label>
+          <select formControlName="roomNo">
+            <option value="">Select</option>
+            <option *ngFor="let v of rooms" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Datacentre -->
+        <div class="form-row">
+          <label class="form-label">Data Centre <span class="required">*</span></label>
+          <select formControlName="datacentre">
+            <option value="">Select</option>
+            <option *ngFor="let v of datacentres" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Rack No -->
+        <div class="form-row">
+          <label class="form-label">Rack No <span class="required">*</span></label>
+          <select formControlName="rackNo">
+            <option value="">Select</option>
+            <option *ngFor="let v of racks" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Height -->
+        <div class="form-row">
+          <label class="form-label">Height (U) <span class="required">*</span></label>
+          <input type="number" formControlName="height" />
+        </div>
+
+        <!-- Device Type -->
+        <div class="form-row">
+          <label class="form-label">Device Type <span class="required">*</span></label>
+          <select formControlName="deviceType">
+            <option value="">Select</option>
+            <option *ngFor="let v of deviceTypes" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Model Name -->
+        <div class="form-row">
+          <label class="form-label">Model Name <span class="required">*</span></label>
+          <input type="text" formControlName="modelName" />
+        </div>
+
+        <!-- Serial Number -->
+        <div class="form-row">
+          <label class="form-label">Serial Number <span class="required">*</span></label>
+          <input type="text" formControlName="serialNumber" />
+        </div>
+
+        <!-- Manufacturer -->
+        <div class="form-row">
+          <label class="form-label">Manufacturer <span class="required">*</span></label>
+          <select formControlName="manufacturer">
+            <option value="">Select</option>
+            <option *ngFor="let v of manufacturers" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- IP Address -->
+        <div class="form-row">
+          <label class="form-label">IP Address</label>
+          <input type="text" formControlName="ipAddress" />
+        </div>
+
+        <!-- PO Number -->
+        <div class="form-row">
+          <label class="form-label">PO Number</label>
+          <input type="text" formControlName="poNumber" />
+        </div>
+
+        <!-- Warranty Start -->
+        <div class="form-row">
+          <label class="form-label">Warranty Start</label>
+          <input type="date" formControlName="warrantyStartDate" />
+        </div>
+
+        <!-- Warranty End -->
+        <div class="form-row">
+          <label class="form-label">Warranty End</label>
+          <input type="date" formControlName="warrantyEndDate" />
+        </div>
+
+        <!-- AMC Start -->
+        <div class="form-row">
+          <label class="form-label">AMC Start</label>
+          <input type="date" formControlName="amcStartDate" />
+        </div>
+
+        <!-- AMC End -->
+        <div class="form-row">
+          <label class="form-label">AMC End</label>
+          <input type="date" formControlName="amcEndDate" />
+        </div>
+
+        <!-- Asset Owner -->
+        <div class="form-row">
+          <label class="form-label">Asset Owner</label>
+          <input type="text" formControlName="assetOwner" />
+        </div>
+
+        <!-- Asset User -->
+        <div class="form-row">
+          <label class="form-label">Asset User</label>
+          <input type="text" formControlName="assetUser" />
+        </div>
+
+        <!-- Attachments -->
+        <div class="form-row">
+          <label class="form-label">Attachments</label>
+
+          <div class="dropzone" (click)="fileInput.click()" tabindex="0" (keydown.enter)="fileInput.click()">
+            <input #fileInput type="file" (change)="onFilesSelected($event)" multiple hidden />
+            <div class="dropzone-inner">
+              <svg class="dz-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3v10" stroke="#0ea5a4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M8 7l4-4 4 4" stroke="#0ea5a4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <rect x="3" y="13" width="18" height="8" rx="2" stroke="#94a3b8" stroke-width="1"/>
+              </svg>
+
+              <div class="dropzone-text">
+                <div class="dz-title">Click to upload or drag files here</div>
+                <div class="dz-sub">Multiple files allowed • .pdf .png .jpg .zip</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="attachments-list" *ngIf="selectedFiles.length">
+            <div class="attachment-row" *ngFor="let f of selectedFiles; let i = index">
+              <div class="attachment-left">
+                <svg class="file-mini-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M14 2v6h6" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="attachment-name">{{ f.name }}</span>
+              </div>
+              <button class="btn remove" type="button" (click)="removeFile(i)">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Application Mapping -->
+        <div class="form-row form-col-1">
+          <label class="form-label">Application Mapping</label>
+          <textarea rows="2" formControlName="applicationMapping"></textarea>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button mat-flat-button color="warn" (click)="onCancel()">Cancel</button>
+        <button mat-flat-button color="primary">
+          {{ editData ? 'Update' : 'Save' }}
+        </button>
+        <button mat-flat-button color="accent" *ngIf="!editData" type="button" (click)="saveAndAddAnother()">
+          Save & Add Another
+        </button>
+      </div>
+
+
+    </form>
+  </div>
+</div>

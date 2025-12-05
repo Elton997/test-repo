@@ -1,0 +1,2992 @@
+{
+  "info": {
+    "_postman_id": "dcim-api-collection-001",
+    "name": "DCIM FastAPI Backend",
+    "description": "Data Center Infrastructure Management (DCIM) API used by the Angular UI.\n\n## Authentication & RBAC\n- Obtain JWT access + opaque refresh tokens via `/api/dcim/login` and store them as Postman collection variables.\n- Most endpoints require Bearer auth with the **access token**; mutations require editor/admin, and deletes are admin-only.\n- `/refresh` validates the refresh token and issues a **new JWT access token** while reusing the same refresh token until it expires.\n- `/logout` invalidates all refresh tokens for the current user; once the refresh token expires or is invalidated, the user must log in again.\n\n### Location-based RBAC\n- Non-admin users are restricted to specific locations configured in `dcim.dcim_user_location_access (user_id, location_id)`.\n- All listing, export, search, summary, and details endpoints automatically scope results to the user's allowed locations.\n- Admin users are unrestricted and see all locations; other roles must have at least one location row or they will receive `403` errors.\n\n## API Highlights\n- Listings, details, CRUD, delete, and audit endpoints all share the `entity` selector: `locations`, `buildings`, `wings`, `floors`, `datacenters`, `racks`, `devices`, `device_types`, `asset_owner`, `makes`, `models`, `applications`.\n- **Global Search:** `/api/dcim/search` searches across ALL fields in all entity types. Searches string fields (names, descriptions, IPs, serial numbers, etc.), numeric fields (IDs, heights, positions, etc.), and related entity names. Returns results grouped by entity type. Results are also restricted to the user's allowed locations.\n- All filters are applied at the database level for optimal performance. Use query parameters to filter by any column (e.g., `location_name`, `building_status`, `device_status`, `rack_height`, etc.).\n- `/api/dcim/list/export` streams CSV using the same filters as `/list` so the UI can offer download buttons. Exports are also location-scoped for non-admin users.\n- `/health` performs a live database ping plus runtime metadata check; point uptime monitors or frontend readiness guards here.\n- Bulk uploads enqueue background jobs and email a detailed per-row report to the logged-in user.\n- **Device Images:** Devices support image uploads via `multipart/form-data`. Images are stored locally and paths are returned in device details. Use \"Create Device with Image\" and \"Update Device Image\" requests for image operations.\n\n## Foreign Key Strategy\nAll relationships are referenced by `*_name` fields (case-insensitive lookups) to keep payloads human readable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Root - Check API Status",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Check if the DCIM FastAPI server is running. Returns API info and documentation links."
+          },
+          "response": []
+        },
+        {
+          "name": "Health - Probe DB & Runtime",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Readiness probe that pings the Oracle database and surfaces runtime metadata (`status`, `version`, `environment`, `database`). Returns HTTP 200 when both the API and DB are healthy."
+          },
+          "response": []
+        }
+      ],
+      "description": "Health pings for uptime monitors and load balancer checks. `/` returns docs links, `/health` performs deeper diagnostics."
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    // access_token is now a JWT string",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.refresh_token) {",
+                  "    // refresh_token is an opaque string stored in dcim_user_token",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "login"
+              ]
+            },
+            "description": "Authenticate user and get access/refresh tokens.\n\n**Returns:**\n- access_token: Short-lived token for API requests\n- refresh_token: Long-lived token for refreshing access\n- user: User information\n- menuList: RBAC-based menu items"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "logout"
+              ]
+            },
+            "description": "Logout and invalidate all tokens for the current user. Returns HTTP 204 on success."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Use refresh token for this request",
+                  "pm.request.headers.add({",
+                  "    key: 'Authorization',",
+                  "    value: 'Bearer ' + pm.collectionVariables.get('refresh_token')",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.refresh_token) {",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{refresh_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "refresh"
+              ]
+            },
+            "description": "Refresh JWT access token using the current refresh token.\n\n**Required:** `Authorization: Bearer <refresh_token>`.\n\nReturns a new `access_token` (JWT) and reuses the same `refresh_token` until it expires (at which point the user must log in again)."
+          },
+          "response": []
+        }
+      ],
+      "description": "User authentication endpoints for login, logout, and token refresh"
+    },
+    {
+      "name": "Listings",
+      "item": [
+        {
+          "name": "List Locations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/list?entity=locations&offset=0&page_size=10&location_name=&location_description=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "locations",
+                  "description": "Entity type to list"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Pagination offset (0-based)"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "Page size (max 100)"
+                },
+                {
+                  "key": "location_name",
+                  "value": "",
+                  "description": "Filter by location name (case-insensitive)"
+                },
+                {
+                  "key": "location_description",
+                  "value": "",
+                  "description": "Filter by location description (contains match)"
+                }
+              ]
+            },
+            "description": "List locations with aggregate building counts. All filters are applied at the database level."
+          },
+          "response": []
+        },
+        {
+          "name": "List Buildings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/list?entity=buildings&offset=0&page_size=10&location_name=&building_name=&building_status=&building_description=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "buildings"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                },
+                {
+                  "key": "location_name",
+                  "value": "",
+                  "description": "Filter by location name (case-insensitive)"
+                },
+                {
+                  "key": "building_name",
+                  "value": "",
+                  "description": "Filter by building name (case-insensitive)"
+                },
+                {
+                  "key": "building_status",
+                  "value": "",
+                  "description": "Filter by building status (e.g., active, inactive)"
+                },
+                {
+                  "key": "building_description",
+                  "value": "",
+                  "description": "Filter by building description (contains match)"
+                }
+              ]
+            },
+            "description": "List buildings with rack/device counts and status. All filters are applied at the database level."
+          },
+          "response": []
+        },
+        {
+          "name": "List Racks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/list?entity=racks&offset=0&page_size=10&location_name=&building_name=&wing_name=&floor_name=&rack_name=&rack_status=&rack_height=&rack_description=&datacenter_name=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "racks"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                },
+                {
+                  "key": "location_name",
+                  "value": "",
+                  "description": "Filter by location name"
+                },
+                {
+                  "key": "building_name",
+                  "value": "",
+                  "description": "Filter by building name"
+                },
+                {
+                  "key": "wing_name",
+                  "value": "",
+                  "description": "Filter by wing name"
+                },
+                {
+                  "key": "floor_name",
+                  "value": "",
+                  "description": "Filter by floor name"
+                },
+                {
+                  "key": "rack_name",
+                  "value": "",
+                  "description": "Filter by rack name"
+                },
+                {
+                  "key": "rack_status",
+                  "value": "",
+                  "description": "Filter by rack status (e.g., active, maintenance)"
+                },
+                {
+                  "key": "rack_height",
+                  "value": "",
+                  "description": "Filter by rack height (integer)"
+                },
+                {
+                  "key": "rack_description",
+                  "value": "",
+                  "description": "Filter by rack description (contains match)"
+                },
+                {
+                  "key": "datacenter_name",
+                  "value": "",
+                  "description": "Filter by datacenter name"
+                }
+              ]
+            },
+            "description": "List racks with utilization metrics (devices, used_space, available_space). All filters are applied at the database level."
+          },
+          "response": []
+        },
+        {
+          "name": "List Datacenters",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "datacenters"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                },
+                {
+                  "key": "location_name",
+                  "value": "",
+                  "description": "Filter by location name"
+                },
+                {
+                  "key": "building_name",
+                  "value": "",
+                  "description": "Filter by building name"
+                },
+                {
+                  "key": "wing_name",
+                  "value": "",
+                  "description": "Filter by wing name"
+                },
+                {
+                  "key": "floor_name",
+                  "value": "",
+                  "description": "Filter by floor name"
+                },
+                {
+                  "key": "datacenter_name",
+                  "value": "",
+                  "description": "Filter by datacenter name"
+                },
+                {
+                  "key": "datacenter_description",
+                  "value": "",
+                  "description": "Filter by datacenter description (contains match)"
+                }
+              ],
+              "raw": "{{base_url}}/api/dcim/list?entity=datacenters&offset=0&page_size=10&location_name=&building_name=&wing_name=&floor_name=&datacenter_name=&datacenter_description="
+            },
+            "description": "List datacenters with rack/device totals plus location hierarchy metadata. All filters are applied at the database level."
+          },
+          "response": []
+        },
+        {
+          "name": "List Devices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/list?entity=devices&offset=0&page_size=10&location_name=&building_name=&wing_name=&floor_name=&rack_name=&device_name=&device_status=&device_position=&device_face=&device_description=&serial_number=&ip_address=&po_number=&asset_user=&asset_owner=&applications_mapped_name=&warranty_start_date=&warranty_end_date=&amc_start_date=&amc_end_date=&device_type=&make_name=&model_name=&datacenter_name=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                },
+                {
+                  "key": "location_name",
+                  "value": "",
+                  "description": "Filter by location name"
+                },
+                {
+                  "key": "building_name",
+                  "value": "",
+                  "description": "Filter by building name"
+                },
+                {
+                  "key": "wing_name",
+                  "value": "",
+                  "description": "Filter by wing name"
+                },
+                {
+                  "key": "floor_name",
+                  "value": "",
+                  "description": "Filter by floor name"
+                },
+                {
+                  "key": "rack_name",
+                  "value": "",
+                  "description": "Filter by rack name"
+                },
+                {
+                  "key": "device_name",
+                  "value": "",
+                  "description": "Filter by device name"
+                },
+                {
+                  "key": "device_status",
+                  "value": "",
+                  "description": "Filter by device status (e.g., active, inactive)"
+                },
+                {
+                  "key": "device_position",
+                  "value": "",
+                  "description": "Filter by device position in rack (integer)"
+                },
+                {
+                  "key": "device_face",
+                  "value": "",
+                  "description": "Filter by device face (front/rear)"
+                },
+                {
+                  "key": "device_description",
+                  "value": "",
+                  "description": "Filter by device description (contains match)"
+                },
+                {
+                  "key": "serial_number",
+                  "value": "",
+                  "description": "Filter by device serial number"
+                },
+                {
+                  "key": "ip_address",
+                  "value": "",
+                  "description": "Filter by device IP address"
+                },
+                {
+                  "key": "po_number",
+                  "value": "",
+                  "description": "Filter by device PO number"
+                },
+                {
+                  "key": "asset_user",
+                  "value": "",
+                  "description": "Filter by device asset user (e.g., instock, in use)"
+                },
+                {
+                  "key": "asset_owner",
+                  "value": "",
+                  "description": "Filter by device asset owner name"
+                },
+                {
+                  "key": "applications_mapped_name",
+                  "value": "",
+                  "description": "Filter by application mapped name"
+                },
+                {
+                  "key": "warranty_start_date",
+                  "value": "",
+                  "description": "Filter by warranty start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "warranty_end_date",
+                  "value": "",
+                  "description": "Filter by warranty end date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "amc_start_date",
+                  "value": "",
+                  "description": "Filter by AMC start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "amc_end_date",
+                  "value": "",
+                  "description": "Filter by AMC end date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "device_type",
+                  "value": "",
+                  "description": "Filter by device type name"
+                },
+                {
+                  "key": "make_name",
+                  "value": "",
+                  "description": "Filter by make name"
+                },
+                {
+                  "key": "model_name",
+                  "value": "",
+                  "description": "Filter by model name"
+                },
+                {
+                  "key": "datacenter_name",
+                  "value": "",
+                  "description": "Filter by datacenter name"
+                }
+              ]
+            },
+            "description": "List devices with nested make/model/application data. All filters are applied at the database level for optimal performance."
+          },
+          "response": []
+        },
+        {
+          "name": "List Device Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/list?entity=device_types&offset=0&page_size=10&device_type=&device_type_description=&make_name=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "device_types"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                },
+                {
+                  "key": "device_type",
+                  "value": "",
+                  "description": "Filter by device type name"
+                },
+                {
+                  "key": "device_type_description",
+                  "value": "",
+                  "description": "Filter by device type description (contains match)"
+                },
+                {
+                  "key": "make_name",
+                  "value": "",
+                  "description": "Filter by make name"
+                }
+              ]
+            },
+            "description": "List device types with make info, canonical model height, and device counts. All filters are applied at the database level."
+          },
+          "response": []
+        },
+        {
+          "name": "List Makes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/list?entity=makes&offset=0&page_size=10&make_name=&make_description=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "makes"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                },
+                {
+                  "key": "make_name",
+                  "value": "",
+                  "description": "Filter by make name"
+                },
+                {
+                  "key": "make_description",
+                  "value": "",
+                  "description": "Filter by make description (contains match)"
+                }
+              ]
+            },
+            "description": "List makes with aggregated racks/devices/models counts. All filters are applied at the database level."
+          },
+          "response": []
+        },
+        {
+          "name": "List Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/list?entity=models&offset=0&page_size=10&model_name=&model_description=&model_height=&make_name=&device_type=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "models"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                },
+                {
+                  "key": "model_name",
+                  "value": "",
+                  "description": "Filter by model name"
+                },
+                {
+                  "key": "model_description",
+                  "value": "",
+                  "description": "Filter by model description (contains match)"
+                },
+                {
+                  "key": "model_height",
+                  "value": "",
+                  "description": "Filter by model height (integer)"
+                },
+                {
+                  "key": "make_name",
+                  "value": "",
+                  "description": "Filter by make name"
+                },
+                {
+                  "key": "device_type",
+                  "value": "",
+                  "description": "Filter by device type name"
+                }
+              ]
+            },
+            "description": "List models with make + primary device type linkage and heights. All filters are applied at the database level."
+          },
+          "response": []
+        }
+      ],
+      "description": "List paginated DCIM entities. Supply the `entity` plus optional filter parameters. All filters are applied at the database level for optimal performance. Responses are cached per user+filters for faster repeat loads. Requires viewer or higher access."
+    },
+    {
+      "name": "Global Search",
+      "item": [
+        {
+          "name": "Search All Entities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/search?q=&limit_per_type=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Search query string (searches across ALL fields in all entities)",
+                  "disabled": false
+                },
+                {
+                  "key": "limit_per_type",
+                  "value": "10",
+                  "description": "Maximum results per entity type (max 50)",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Global search across ALL fields in all DCIM entities.\n\n**Searches in:**\n- **locations**: ID, name, description\n- **buildings**: ID, name, status, description, location_id, location name/description\n- **racks**: ID, name, status, description, height, width, space_used, space_available, location/building names\n- **devices**: ID, name, serial_no, IP, status, PO number, asset_user, position, space_required, description, and related entity names (location, building, rack, make, device_type, application, asset_owner)\n- **device_types**: ID, name, description, make_id, make name/description\n- **makes**: ID, name, description\n- **models**: ID, name, description, height, make_id, device_type_id, make/device_type names\n- **datacenters**: ID, name, description, location_id, building_id, location/building names\n- **asset_owners**: ID, name, description, location_id, location name/description\n- **applications**: ID, name, description, asset_owner_id, asset_owner name/description\n\n**Examples:**\n- `q=server` - finds devices, device types, models, etc. containing \"server\"\n- `q=192.168.1.1` - finds devices with that IP address\n- `q=42` - finds entities with ID 42, height 42, position 42, etc.\n- `q=active` - finds all entities with \"active\" status\n- `q=Dell` - finds makes named \"Dell\" and related devices/models\n\nReturns results grouped by entity type. All searches are case-insensitive. Numeric searches also match exact ID/number values. Requires viewer or higher access."
+          },
+          "response": []
+        }
+      ],
+      "description": "Global search endpoint that searches across ALL fields in all DCIM entity types. Returns results grouped by entity type with a maximum number of results per type. Requires viewer or higher access."
+    },
+    {
+      "name": "Exports",
+      "description": "Download CSV representations of `/list` results using `/api/dcim/list/export`. Streams data in chunks, so Postman will download the file when you send the request. Use the same filters as Listings - all filters are applied at the database level for optimal performance. Requires viewer access.",
+      "item": [
+        {
+          "name": "Export Racks CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list",
+                "export"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "racks",
+                  "description": "Entity to export"
+                },
+                {
+                  "key": "location_name",
+                  "value": "",
+                  "description": "Filter by location name"
+                },
+                {
+                  "key": "building_name",
+                  "value": "",
+                  "description": "Filter by building name"
+                },
+                {
+                  "key": "wing_name",
+                  "value": "",
+                  "description": "Filter by wing name"
+                },
+                {
+                  "key": "floor_name",
+                  "value": "",
+                  "description": "Filter by floor name"
+                },
+                {
+                  "key": "rack_name",
+                  "value": "",
+                  "description": "Filter by rack name"
+                },
+                {
+                  "key": "rack_status",
+                  "value": "",
+                  "description": "Filter by rack status"
+                },
+                {
+                  "key": "rack_height",
+                  "value": "",
+                  "description": "Filter by rack height (integer)"
+                },
+                {
+                  "key": "rack_description",
+                  "value": "",
+                  "description": "Filter by rack description (contains match)"
+                },
+                {
+                  "key": "datacenter_name",
+                  "value": "",
+                  "description": "Filter by datacenter name"
+                }
+              ],
+              "raw": "{{base_url}}/api/dcim/list/export?entity=racks&location_name=&building_name=&wing_name=&floor_name=&rack_name=&rack_status=&rack_height=&rack_description=&datacenter_name="
+            },
+            "description": "Stream rack records (with utilization fields) as CSV. All filters are applied at the database level. Browser will prompt for download."
+          },
+          "response": []
+        },
+        {
+          "name": "Export Devices CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "list",
+                "export"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices"
+                },
+                {
+                  "key": "location_name",
+                  "value": "",
+                  "description": "Filter by location name"
+                },
+                {
+                  "key": "building_name",
+                  "value": "",
+                  "description": "Filter by building name"
+                },
+                {
+                  "key": "wing_name",
+                  "value": "",
+                  "description": "Filter by wing name"
+                },
+                {
+                  "key": "floor_name",
+                  "value": "",
+                  "description": "Filter by floor name"
+                },
+                {
+                  "key": "rack_name",
+                  "value": "",
+                  "description": "Filter by rack name"
+                },
+                {
+                  "key": "device_name",
+                  "value": "",
+                  "description": "Filter by device name"
+                },
+                {
+                  "key": "device_status",
+                  "value": "",
+                  "description": "Filter by device status"
+                },
+                {
+                  "key": "device_position",
+                  "value": "",
+                  "description": "Filter by device position (integer)"
+                },
+                {
+                  "key": "device_face",
+                  "value": "",
+                  "description": "Filter by device face (front/rear)"
+                },
+                {
+                  "key": "device_description",
+                  "value": "",
+                  "description": "Filter by device description (contains match)"
+                },
+                {
+                  "key": "serial_number",
+                  "value": "",
+                  "description": "Filter by device serial number"
+                },
+                {
+                  "key": "ip_address",
+                  "value": "",
+                  "description": "Filter by device IP address"
+                },
+                {
+                  "key": "po_number",
+                  "value": "",
+                  "description": "Filter by device PO number"
+                },
+                {
+                  "key": "asset_user",
+                  "value": "",
+                  "description": "Filter by device asset user"
+                },
+                {
+                  "key": "asset_owner",
+                  "value": "",
+                  "description": "Filter by device asset owner name"
+                },
+                {
+                  "key": "applications_mapped_name",
+                  "value": "",
+                  "description": "Filter by application mapped name"
+                },
+                {
+                  "key": "warranty_start_date",
+                  "value": "",
+                  "description": "Filter by warranty start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "warranty_end_date",
+                  "value": "",
+                  "description": "Filter by warranty end date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "amc_start_date",
+                  "value": "",
+                  "description": "Filter by AMC start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "amc_end_date",
+                  "value": "",
+                  "description": "Filter by AMC end date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "device_type",
+                  "value": "",
+                  "description": "Filter by device type name"
+                },
+                {
+                  "key": "make_name",
+                  "value": "",
+                  "description": "Filter by make name"
+                },
+                {
+                  "key": "model_name",
+                  "value": "",
+                  "description": "Filter by model name"
+                },
+                {
+                  "key": "datacenter_name",
+                  "value": "",
+                  "description": "Filter by datacenter name"
+                }
+              ],
+              "raw": "{{base_url}}/api/dcim/list/export?entity=devices&location_name=&building_name=&wing_name=&floor_name=&rack_name=&device_name=&device_status=&device_position=&device_face=&device_description=&serial_number=&ip_address=&po_number=&asset_user=&asset_owner=&applications_mapped_name=&warranty_start_date=&warranty_end_date=&amc_start_date=&amc_end_date=&device_type=&make_name=&model_name=&datacenter_name="
+            },
+            "description": "Stream device inventory with nested make/model/application fields flattened. All filters are applied at the database level."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Details",
+      "item": [
+        {
+          "name": "Get Location Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=locations&name=Hyderabad-DC1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "locations"
+                },
+                {
+                  "key": "name",
+                  "value": "Hyderabad-DC1",
+                  "description": "Location name"
+                }
+              ]
+            },
+            "description": "Get location info + buildings list + stats"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Building Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=buildings&name=Building-A",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "buildings"
+                },
+                {
+                  "key": "name",
+                  "value": "Building-A",
+                  "description": "Building name"
+                }
+              ]
+            },
+            "description": "Get building info + racks list + capacity stats"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Wing Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=wings&name=Wing-A",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "wings"
+                },
+                {
+                  "key": "name",
+                  "value": "Wing-A",
+                  "description": "Wing name"
+                }
+              ]
+            },
+            "description": "Get wing info + floors list + stats"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Floor Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=floors&name=Floor-1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "floors"
+                },
+                {
+                  "key": "name",
+                  "value": "Floor-1",
+                  "description": "Floor name"
+                }
+              ]
+            },
+            "description": "Get floor info + datacenters list + stats"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Datacenter Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=datacenters&name=DC-1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "datacenters"
+                },
+                {
+                  "key": "name",
+                  "value": "DC-1",
+                  "description": "Datacenter name"
+                }
+              ]
+            },
+            "description": "Get datacenter info + racks list + stats"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Rack Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=racks&name=Rack-A1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "racks"
+                },
+                {
+                  "key": "name",
+                  "value": "Rack-A1",
+                  "description": "Rack name"
+                }
+              ]
+            },
+            "description": "Get rack info + devices list + utilization stats"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Device Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=devices&name=Server-01",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices"
+                },
+                {
+                  "key": "name",
+                  "value": "Server-01",
+                  "description": "Device name"
+                }
+              ]
+            },
+            "description": "Get full device info with all relationships including front_image_path / rear_image_path (if the device has uploaded images)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Device Type Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=device_types&name=Dell PowerEdge R740",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "device_types"
+                },
+                {
+                  "key": "name",
+                  "value": "Dell PowerEdge R740",
+                  "description": "Device type name"
+                }
+              ]
+            },
+            "description": "Get device type + make + model + device count"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Asset Owner Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=asset_owner&name=IT Department",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "asset_owner"
+                },
+                {
+                  "key": "name",
+                  "value": "IT Department",
+                  "description": "Asset owner name"
+                }
+              ]
+            },
+            "description": "Get asset owner + location info"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Make Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=makes&name=Dell",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "makes"
+                },
+                {
+                  "key": "name",
+                  "value": "Dell",
+                  "description": "Make name"
+                }
+              ]
+            },
+            "description": "Get make + models + device types + stats"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Model Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=models&name=PowerEdge R740",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "models"
+                },
+                {
+                  "key": "name",
+                  "value": "PowerEdge R740",
+                  "description": "Model name"
+                }
+              ]
+            },
+            "description": "Get model + make + device types"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Application Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/details?entity=applications&name=ERP System",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "details"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "applications"
+                },
+                {
+                  "key": "name",
+                  "value": "ERP System",
+                  "description": "Application name"
+                }
+              ]
+            },
+            "description": "Get application info + asset owner + mapped devices"
+          },
+          "response": []
+        }
+      ],
+      "description": "Get detailed information about locations, buildings, wings, floors, datacenters, racks, devices, device types, asset owners, makes, models, and applications by name. Requires viewer or higher access level."
+    },
+    {
+      "name": "Create (Add)",
+      "item": [
+        {
+          "name": "Create Location",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Hyderabad-DC1\",\n    \"description\": \"Primary data center in Hyderabad\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=locations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "locations"
+                }
+              ]
+            },
+            "description": "Create a new location.\n\n**Required fields:** `name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Building",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Building-A\",\n    \"status\": \"active\",\n    \"location_name\": \"Hyderabad-DC1\",\n    \"description\": \"Main building\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=buildings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "buildings"
+                }
+              ]
+            },
+            "description": "Create a new building attached to an existing location.\n\n**Required fields:** `name`, `status`, `location_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Datacenter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"DC-01\",\n    \"location_name\": \"Hyderabad-DC1\",\n    \"building_name\": \"Building-A\",\n    \"wing_name\": \"Wing-A\",\n    \"floor_name\": \"Floor-1\",\n    \"description\": \"Primary datacenter\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=datacenters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "datacenters"
+                }
+              ]
+            },
+            "description": "Create a datacenter at the end of the hierarchy.\n\n**Required fields:** `name`, `location_name`, `building_name`, `wing_name`, `floor_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Rack",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Rack-A1\",\n    \"location_name\": \"Hyderabad-DC1\",\n    \"building_name\": \"Building-A\",\n    \"wing_name\": \"Wing-A\",\n    \"floor_name\": \"Floor-1\",\n    \"datacenter_name\": \"DC-01\",\n    \"status\": \"active\",\n    \"width\": 24,\n    \"height\": 42,\n    \"description\": \"Server rack A1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=racks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "racks"
+                }
+              ]
+            },
+            "description": "Create a rack with status and dimensions.\n\n**Required fields:** `name`, `location_name`, `building_name`, `wing_name`, `floor_name`, `datacenter_name`, `status`, `width`, `height`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Make",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Dell\",\n    \"description\": \"Dell Technologies\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=makes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "makes"
+                }
+              ]
+            },
+            "description": "Create a hardware manufacturer entry.\n\n**Required fields:** `name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Model",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"PowerEdge R740\",\n    \"make_name\": \"Dell\",\n    \"devicetype_name\": \"Dell PowerEdge R740 2U\",\n    \"height\": 2,\n    \"description\": \"Dell PowerEdge R740 Server\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "models"
+                }
+              ]
+            },
+            "description": "Create a model tied to a make + device type.\n\n**Required fields:** `name`, `make_name`, `devicetype_name`, `height`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Device Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Dell PowerEdge R740 2U\",\n    \"make_name\": \"Dell\",\n    \"description\": \"2U Rack Server\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=device_types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "device_types"
+                }
+              ]
+            },
+            "description": "Create a device type.\n\n**Required fields:** `name`, `make_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Asset Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"IT Department\",\n    \"location_name\": \"Hyderabad-DC1\",\n    \"description\": \"IT Infrastructure Team\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=asset_owner",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "asset_owner"
+                }
+              ]
+            },
+            "description": "Create an asset owner record.\n\n**Required fields:** `name`, `location_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"ERP System\",\n    \"asset_owner_name\": \"IT Department\",\n    \"description\": \"Enterprise Resource Planning Application\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=applications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "applications"
+                }
+              ]
+            },
+            "description": "Create an application mapping.\n\n**Required fields:** `name`, `asset_owner_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Device with Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+            "mode": "formdata",
+            "formdata": [
+              {
+                "key": "data",
+                "value": "{\"name\": \"Server-01\", \"serial_no\": \"SN-12345\", \"position\": 1, \"face\": \"front\", \"status\": \"active\", \"devicetype_name\": \"HPE ProLiant DL360 Gen11\", \"location_name\": \"Mumbai\", \"building_name\": \"MUM-B1\", \"rack_name\": \"MUM-RACK-A1\", \"datacenter_name\": \"MUM-B1-WingA-DC\", \"wing_name\": \"MUM-B1-WingA\", \"floor_name\": \"MUM-B1-WingA-Floor1\", \"make_name\": \"Hewlett Packard Enterprise\", \"model_name\": \"HPE ProLiant DL360 Gen10\", \"ip\": \"192.168.1.100\", \"po_number\": \"PO-2024-001\", \"asset_user\": \"in use\", \"asset_owner_name\": \"Cloud Infrastructure Team\", \"application_name\": \"Billing System\", \"warranty_start_date\": \"2024-01-01\", \"warranty_end_date\": \"2027-01-01\", \"amc_start_date\": \"2027-01-02\", \"amc_end_date\": \"2030-01-01\", \"description\": \"Production web server\"}",
+                "type": "text",
+                "description": "Device data as JSON string"
+              },
+              {
+                "key": "front_image",
+                "type": "file",
+                "src": [],
+                "description": "Front device image file (jpg, jpeg, png, gif, webp - max 10MB)"
+              },
+              {
+                "key": "rear_image",
+                "type": "file",
+                "src": [],
+                "description": "Rear device image file (optional)"
+              }
+            ]
+          },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/add?entity=devices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "add"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices"
+                }
+              ]
+            },
+            "description": "Create a device with uploaded images.\n\n**Content-Type:** `multipart/form-data`\n\n**Form fields:**\n- `data`: JSON string containing all device fields (same as Create Device without image)\n- `front_image`: Front device image file (jpg, jpeg, png, gif, webp, max 10MB)\n- `rear_image`: Rear device image file (optional)\n\n**Required fields in data JSON:** Same as \"Create Device\" endpoint.\n\nThe images will be saved to the configured storage path and the `front_image_path` / `rear_image_path` will be stored in the database and returned in the response and device details."
+          },
+          "response": []
+        }
+      ],
+      "description": "Create new DCIM entities. Requires editor or admin role. Each payload is validated by its schema; missing required fields will return HTTP 400/422. Direct adds for `wings` and `floors` are blocked in the API\u2014use the bulk upload endpoints when onboarding those hierarchies (or large batches of datacenters)."
+    },
+    {
+      "name": "Update",
+      "item": [
+        {
+          "name": "Update Location",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Hyderabad-DC2\",\n    \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Hyderabad-DC1?entity=locations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Hyderabad-DC1"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "locations"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `description`. Names are case-insensitive."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Building",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Building-B\",\n    \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Building-A?entity=buildings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Building-A"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "buildings"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `status`, `location_name`, `description`. Use to re-home buildings or flip status."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Wing",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Wing-B\",\n    \"description\": \"West wing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Wing-A?entity=wings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Wing-A"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "wings"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `location_name`, `building_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Floor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Floor-2\",\n    \"description\": \"Second floor\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Floor-1?entity=floors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Floor-1"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "floors"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `location_name`, `building_name`, `wing_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Datacenter",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"DC-02\",\n    \"description\": \"Secondary datacenter\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/DC-01?entity=datacenters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "DC-01"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "datacenters"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `location_name`, `building_name`, `wing_name`, `floor_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Rack",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Rack-A2\",\n    \"status\": \"maintenance\",\n    \"height\": 48\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Rack-A1?entity=racks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Rack-A1"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "racks"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `location_name`, `building_name`, `wing_name`, `floor_name`, `datacenter_name`, `status`, `width`, `height`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Device Image",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "data",
+                  "value": "{\"status\": \"active\"}",
+                  "type": "text",
+                  "description": "Optional device data as JSON string (can be empty object {})"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "New device image file (jpg, jpeg, png, gif, webp - max 10MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Server-01?entity=devices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Server-01"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices"
+                }
+              ]
+            },
+            "description": "Update device image. Replaces existing image if present.\n\n**Content-Type:** `multipart/form-data`\n\n**Form fields:**\n- `data`: Optional JSON string with other device fields to update (can be empty object `{}`)\n- `image`: New image file (jpg, jpeg, png, gif, webp, max 10MB)\n\nThe old image file will be automatically deleted and replaced with the new one."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Device Image",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "data",
+                  "value": "{}",
+                  "type": "text",
+                  "description": "Optional device data as JSON string (can be empty object)"
+                },
+                {
+                  "key": "delete_front_image",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Set to true to delete existing front image"
+                },
+                {
+                  "key": "delete_rear_image",
+                  "value": "false",
+                  "type": "text",
+                  "description": "Set to true to delete existing rear image"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Server-01?entity=devices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Server-01"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices"
+                }
+              ]
+            },
+            "description": "Delete device images.\n\n**Content-Type:** `multipart/form-data`\n\n**Form fields:**\n- `data`: Optional JSON string with other device fields to update (can be empty object `{}`)\n- `delete_front_image`: Set to `true` to remove the existing front image\n- `delete_rear_image`: Set to `true` to remove the existing rear image\n\nThe image files will be deleted from storage and `front_image_path` / `rear_image_path` will be set to null in the database."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Device Type",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Dell PowerEdge R750 2U\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Dell PowerEdge R740 2U?entity=device_types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Dell PowerEdge R740 2U"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "device_types"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `make_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Make",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"HP\",\n    \"description\": \"Hewlett-Packard\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/Dell?entity=makes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "Dell"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "makes"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Model",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"PowerEdge R750\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/PowerEdge R740?entity=models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "PowerEdge R740"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "models"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `make_name`, `devicetype_name`, `height`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Asset Owner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"DevOps Team\",\n    \"description\": \"DevOps Infrastructure Team\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/IT Department?entity=asset_owner",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "IT Department"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "asset_owner"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `location_name`, `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Application",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"CRM System\",\n    \"description\": \"Customer Relationship Management\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/update/ERP System?entity=applications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "update",
+                "ERP System"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "applications"
+                }
+              ]
+            },
+            "description": "**Updatable fields:** `name`, `asset_owner_name`, `description`."
+          },
+          "response": []
+        }
+      ],
+      "description": "Update any entity by name. Provide the `entity` query param and only the fields you wish to change; the API validates payloads and ignores missing keys. Requires editor or admin role."
+    },
+    {
+      "name": "Bulk Upload",
+      "item": [
+        {
+          "name": "Bulk Upload - Devices",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV file with device data"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/bulk-upload?entity_type=devices&skip_errors=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "bulk-upload"
+              ],
+              "query": [
+                {
+                  "key": "entity_type",
+                  "value": "devices",
+                  "description": "Entity type: devices, racks, entity_wfd, entity_asset_details, entity_devicetypes"
+                },
+                {
+                  "key": "skip_errors",
+                  "value": "false",
+                  "description": "If true, continue processing remaining rows on error. If false, stop on first error."
+                }
+              ]
+            },
+            "description": "Upload a CSV of devices.\n\n**Expected columns:** HostName, Serial No, Asset Status, Building, Location, Wing, Floor, Room/Area, Rack No, Manufacturer, Model ID, Asset Type, IP Address, Asset PO Number, Asset Owner, Asset User, Application Mapped, Warranty Start Date, Warranty End Date, AMC Start Date, AMC End Date, Position, Face, Description\n\nThe API validates and enqueues a background job, then emails per-row results (success/error) to the logged-in user."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Upload - Racks",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV file with rack data"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/bulk-upload?entity_type=racks&skip_errors=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "bulk-upload"
+              ],
+              "query": [
+                {
+                  "key": "entity_type",
+                  "value": "racks",
+                  "description": "Entity type: devices, racks, entity_wfd, entity_asset_details, entity_devicetypes"
+                },
+                {
+                  "key": "skip_errors",
+                  "value": "false",
+                  "description": "If true, continue processing remaining rows on error. If false, stop on first error."
+                }
+              ]
+            },
+            "description": "Upload a CSV of racks.\n\n**Expected columns:** Rack Name, Location Name, Building Name, Wing Name, Floor Name, Datacenter Name, Status, Width, Height, Description\n\nProcessing runs in a background job and emails a status report."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Upload - Hierarchy (Wings, Floors, Datacenters)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV file with wing/floor/datacenter data"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/bulk-upload?entity_type=entity_wfd&skip_errors=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "bulk-upload"
+              ],
+              "query": [
+                {
+                  "key": "entity_type",
+                  "value": "entity_wfd",
+                  "description": "Entity type: devices, racks, entity_wfd, entity_asset_details, entity_devicetypes"
+                },
+                {
+                  "key": "skip_errors",
+                  "value": "false",
+                  "description": "If true, continue processing remaining rows on error. If false, stop on first error."
+                }
+              ]
+            },
+            "description": "Upload a CSV containing wing/floor/datacenter definitions (one row per hierarchy).\n\n**Expected columns:** Location Name, Building Name, Wing Name, Floor Name, Datacenter Name, Description\n\n**Processing order:** Wings → Floors → Datacenters\n\nIdeal for onboarding building layouts at scale."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Upload - Asset Details (Asset Owners, Applications)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV file with asset owner and application data"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/bulk-upload?entity_type=entity_asset_details&skip_errors=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "bulk-upload"
+              ],
+              "query": [
+                {
+                  "key": "entity_type",
+                  "value": "entity_asset_details",
+                  "description": "Entity type: devices, racks, entity_wfd, entity_asset_details, entity_devicetypes"
+                },
+                {
+                  "key": "skip_errors",
+                  "value": "false",
+                  "description": "If true, continue processing remaining rows on error. If false, stop on first error."
+                }
+              ]
+            },
+            "description": "Upload a CSV containing asset owner and application mappings.\n\n**Expected columns:** Asset Owner Name, Location Name, Application Name, Asset Owner Description, Application Description\n\n**Processing order:** Asset Owners → Applications\n\nUseful for onboarding ownership and application mapping data."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Upload - Device Types (Makes, Device Types, Models)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV file with make, device type, and model data"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/dcim/bulk-upload?entity_type=entity_devicetypes&skip_errors=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "bulk-upload"
+              ],
+              "query": [
+                {
+                  "key": "entity_type",
+                  "value": "entity_devicetypes",
+                  "description": "Entity type: devices, racks, entity_wfd, entity_asset_details, entity_devicetypes"
+                },
+                {
+                  "key": "skip_errors",
+                  "value": "false",
+                  "description": "If true, continue processing remaining rows on error. If false, stop on first error."
+                }
+              ]
+            },
+            "description": "Upload a CSV containing make, device type, and model definitions.\n\n**Expected columns:** Make Name, DeviceType Name, Model Name, Height, Make Description, DeviceType Description, Model Description\n\n**Processing order:** Makes → Device Types → Models\n\nIdeal for onboarding hardware catalog data."
+          },
+          "response": []
+        }
+      ],
+      "description": "Unified CSV bulk upload endpoint supporting multiple entity types via the `entity_type` query parameter.\n\n**Supported entity types:**\n- `devices` - Single device entities\n- `racks` - Single rack entities\n- `entity_wfd` - Wings, Floors, Datacenters (hierarchical)\n- `entity_asset_details` - Asset Owners, Applications Mapped\n- `entity_devicetypes` - Makes, Device Types, Models\n\nAll requests return `job_id` + `report_recipient` immediately (HTTP 202) and continue processing in the background before emailing a detailed report."
+    },
+    {
+      "name": "Delete",
+      "item": [
+        {
+          "name": "Delete Location",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Hyderabad-DC1?entity=locations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Hyderabad-DC1"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "locations"
+                }
+              ]
+            },
+            "description": "Deletes the location and cascades to buildings, racks, and devices beneath it."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Building",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Building-A?entity=buildings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Building-A"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "buildings"
+                }
+              ]
+            },
+            "description": "Deletes the building and cascades to racks/devices in that building."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Wing",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Wing-A?entity=wings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Wing-A"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "wings"
+                }
+              ]
+            },
+            "description": "Deletes the wing definition. Ensure no dependent floors/datacenters before deleting."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Floor",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Floor-1?entity=floors",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Floor-1"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "floors"
+                }
+              ]
+            },
+            "description": "Deletes the floor definition. Ensure no dependent datacenters before deleting."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Datacenter",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/DC-01?entity=datacenters",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "DC-01"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "datacenters"
+                }
+              ]
+            },
+            "description": "Deletes the datacenter. Ensure racks/devices are migrated first."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Rack",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Rack-A1?entity=racks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Rack-A1"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "racks"
+                }
+              ]
+            },
+            "description": "Deletes a rack and releases any tracked capacity."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Device",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Server-01?entity=devices",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Server-01"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices"
+                }
+              ]
+            },
+            "description": "Deletes a device and frees rack capacity. Logged to the audit trail."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Device Type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Dell PowerEdge R740 2U?entity=device_types",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Dell PowerEdge R740 2U"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "device_types"
+                }
+              ]
+            },
+            "description": "Deletes a device type. Ensure devices/models referencing it are migrated."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Make",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/Dell?entity=makes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "Dell"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "makes"
+                }
+              ]
+            },
+            "description": "Deletes a make. Models/device types referencing it must be deleted first."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Model",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/PowerEdge R740?entity=models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "PowerEdge R740"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "models"
+                }
+              ]
+            },
+            "description": "Deletes a model entry."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Asset Owner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/IT Department?entity=asset_owner",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "IT Department"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "asset_owner"
+                }
+              ]
+            },
+            "description": "Deletes an asset owner. Applications referencing it must be updated."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Application",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/delete/ERP System?entity=applications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "delete",
+                "ERP System"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "applications"
+                }
+              ]
+            },
+            "description": "Deletes an application mapping by name."
+          },
+          "response": []
+        }
+      ],
+      "description": "Delete entities by name. These operations require the admin role and are fully audited; cascading relationships (e.g., deleting a location) will remove dependent objects. Use with caution."
+    },
+    {
+      "name": "Summary",
+      "item": [
+        {
+          "name": "Get Location Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/summary/locations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "summary",
+                "locations"
+              ]
+            },
+            "description": "Returns location-level counts for devices, racks, and distinct device types. Requires viewer access."
+          },
+          "response": []
+        }
+      ],
+      "description": "Pre-aggregated views that power UI dashboard cards."
+    },
+    {
+      "name": "Change Logs (Audit)",
+      "item": [
+        {
+          "name": "Get All Change Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/change-logs?page=1&page_size=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "change-logs"
+              ],
+              "query": [
+                {
+                  "key": "entity",
+                  "value": "devices",
+                  "description": "Optional: Filter by entity type",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "create",
+                  "description": "Optional: Filter by action (create/update/delete)",
+                  "disabled": true
+                },
+                {
+                  "key": "object_name",
+                  "value": "Server-01",
+                  "description": "Optional: Filter by specific object name (requires entity type)",
+                  "disabled": true
+                },
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "description": "Optional: Filter by username who performed the action",
+                  "disabled": true
+                },
+                {
+                  "key": "from_date",
+                  "value": "2024-01-01T00:00:00",
+                  "description": "Optional: Filter from date (ISO format)",
+                  "disabled": true
+                },
+                {
+                  "key": "to_date",
+                  "value": "2024-12-31T23:59:59",
+                  "description": "Optional: Filter to date (ISO format)",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Retrieve paginated audit logs with optional filters for entity, action, object name, username, and date range. Disabled params show available filters\u2014enable as needed."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Change Log by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/change-logs/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "change-logs",
+                "1"
+              ]
+            },
+            "description": "Fetch a single audit record (including the user who performed the action) by numeric ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Entity Change History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dcim/change-logs/entity/devices/Server-01?page=1&page_size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dcim",
+                "change-logs",
+                "entity",
+                "devices",
+                "Server-01"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Resolve an entity name to its internal ID and return the chronological change history for that object. Supports pagination for long histories."
+          },
+          "response": []
+        }
+      ],
+      "description": "Audit endpoints that expose the immutable change log generated by CRUD/bulk actions. Every record includes the acting user, action, entity, and message. Requires viewer access."
+    }
+  ]
+}

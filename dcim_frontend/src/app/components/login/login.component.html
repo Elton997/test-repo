@@ -1,0 +1,61 @@
+<div class="login-container">
+
+  <!-- Left Image Section -->
+  <div class="login-visual">
+    <div class="visual-overlay"></div>
+    <img [src]="'assets/images/login.jpeg'" alt="DCIM Login" />
+
+    <div class="visual-text">
+      <img src="assets/images/organization3.png" alt="DCIM Logo" class="visual-logo" />
+      <h1>DCIM Portal</h1>
+      <p>Monitor and manage your racks, devices, and infrastructure.</p>
+    </div>
+  </div>
+
+  <!-- Right Form Section -->
+  <div class="login-panel">
+    <div class="panel-card">
+
+      <div class="login-logo">
+        <img src="assets/images/logo_LoginPage (2).png" alt="DCIM Logo" />
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+
+        <!-- Username -->
+        <div class="form-field">
+          <label>Username</label>
+          <input formControlName="username" class="input" type="text" appAppInputRestriction />
+          <span class="error" *ngIf="f['username'].touched && f['username'].errors?.['required']">
+            Username is required
+          </span>
+        </div>
+
+        <!-- Password -->
+        <div class="form-field">
+          <label>Password</label>
+
+          <div class="password-box">
+            <input [type]="showPassword ? 'text' : 'password'" formControlName="password" class="input"
+              appAppInputRestriction />
+            <span><button type="button" class="toggle-password" (click)="togglePassword()">
+                {{ showPassword ? 'Hide' : 'Show' }}
+              </button></span>
+          </div>
+          <span class="error" *ngIf="f['password'].touched && f['password'].errors?.['required']">
+            Password is required
+          </span>
+        </div>
+
+        <!-- Button -->
+        <button class="btn-login" type="submit" [disabled]="loginForm.invalid">
+          Login
+        </button>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+<app-loader *ngIf="loading" [overlay]="true" text="Loading data..."></app-loader>

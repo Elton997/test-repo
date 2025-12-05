@@ -1,0 +1,14 @@
+<app-dynamic-table
+    [title]="'Devices'"
+    [columns]="columns"
+    [data]="devicelist"
+    [filterConfig]="filters"
+    [pageSize]="pageSize"
+    [loading]="loading"
+    [totalCount]="totalCount" 
+    (rowClick)="handleRowClick($event)"
+    [offset]="offset" 
+    [appliedFilters]="appliedFilters" 
+    (pageChange)="onPageChange($event)" 
+    (filtersChanged)="onFiltersChanged($event)">
+</app-dynamic-table>

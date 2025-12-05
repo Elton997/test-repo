@@ -1,0 +1,14 @@
+<app-dynamic-table
+    [title]="'Racks'"
+    [columns]="columns"
+    [data]="racks"
+    [pageSize]="pageSize"
+    [loading]="loading"
+    (rowClick)="handleRowClick($event)"
+    [totalCount]="totalCount" 
+    [offset]="offset" 
+    [filterConfig]="filters"
+    [appliedFilters]="appliedFilters" 
+    (pageChange)="onPageChange($event)" 
+    (filtersChanged)="onFiltersChanged($event)">
+</app-dynamic-table>

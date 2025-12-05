@@ -1,0 +1,61 @@
+<div class="page-container">
+
+  <div class="device-type-card">
+    <h2 class="section-title">Device Type</h2>
+
+    <form [formGroup]="deviceTypeForm" class="device-type-form" (ngSubmit)="saveDeviceType()">
+
+      <div class="form-grid">
+
+        <!-- Device Name -->
+        <div class="form-row">
+          <label class="form-label">Device Name <span class="required">*</span></label>
+          <select formControlName="deviceName">
+            <option value="">Select</option>
+            <option *ngFor="let v of deviceNames" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Predefined Height -->
+        <div class="form-row">
+          <label class="form-label">Predefined Height (U) <span class="required">*</span></label>
+          <select formControlName="predefinedHeight">
+            <option value="">Select</option>
+            <option *ngFor="let v of predefinedHeights" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Manufacturer ID -->
+        <div class="form-row">
+          <label class="form-label">Manufacturer ID <span class="required">*</span></label>
+          <select formControlName="manufacturerID">
+            <option value="">Select</option>
+            <option *ngFor="let v of manufacturerIDs" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+        <!-- Model Name -->
+        <div class="form-row">
+          <label class="form-label">Model Name <span class="required">*</span></label>
+          <select formControlName="modelName">
+            <option value="">Select</option>
+            <option *ngFor="let v of modelNames" [ngValue]="v">{{ v }}</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+        <button mat-flat-button color="warn" (click)="onCancel()">Cancel</button>
+        <button mat-flat-button color="primary">
+          {{ editData ? 'Update' : 'Save' }}
+        </button>
+        <button mat-flat-button color="accent" *ngIf="!editData" type="button" (click)="saveAndAddAnother()">
+          Save & Add Another
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+</div>

@@ -1,0 +1,65 @@
+.layout-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--dcim-surface);
+}
+
+.layout-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Prevents flex item overflow */
+  position: relative;
+}
+
+.layout-main {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  /* Enhanced background with subtle gradients */
+  background: 
+    radial-gradient(ellipse at 100% 0%, rgba(29, 60, 106, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(241, 183, 14, 0.04) 0%, transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  
+  /* Smooth scroll behavior */
+  scroll-behavior: smooth;
+  
+  /* Custom scrollbar for main content */
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(29, 60, 106, 0.15);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(29, 60, 106, 0.25);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .layout-main {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-main {
+    padding: 16px;
+  }
+}

@@ -1,0 +1,66 @@
+<div class="rack-container"><div class="rack-container"><div class="rack-container">
+
+  <div class="rack-header">{{ viewType === 'front' ? 'Front View' : 'Back View' }} - Rack: {{ units }}U — occupied: {{ occupied.length || 0 }}</div>
+
+  <div class="rack-frame">  <div class="rack-header">{{ viewType === 'front' ? 'Front View' : 'Back View' }} - Rack: {{ units }}U — occupied: {{ occupied.length || 0 }}</div>  <div class="rack-header">{{ viewType === 'front' ? 'Front View' : 'Back View' }} - Rack: {{ units }}U — occupied: {{ occupied.length || 0 }}</div>
+
+    <div class="rack-slots">
+
+      <ng-container *ngFor="let slot of getSlots(); let index = index">  <div class="rack-frame">  <div class="rack-frame">
+
+        <div class="rack-slot" [attr.data-slot]="slot">
+
+          <!-- Check if this slot is the start of an occupied device -->    <div class="rack-slots">    <div class="rack-slots">
+
+          <ng-container *ngIf="isOccupied(slot) as occ">
+
+            <!-- Only render device block at the topmost slot (highest slot number in the range) -->      <ng-container *ngFor="let slot of getSlots()">      <ng-container *ngFor="let slot of getSlots()">
+
+            <ng-container *ngIf="slot === (occ.start + occ.height - 1)">
+
+              <div class="device-block" [ngStyle]="{ height: (occ.height * 28) + 'px' }" [title]="occ.label">        <div class="rack-slot" [attr.data-slot]="slot" [class.occupied]="isOccupied(slot)">        <div class="rack-slot" [attr.data-slot]="slot" [class.occupied]="isOccupied(slot)">
+
+                <div class="device-label">{{ occ.label }}</div>
+
+              </div>          <ng-container *ngIf="isOccupied(slot) as occ">          <ng-container *ngIf="isOccupied(slot) as occ">
+
+            </ng-container>
+
+          </ng-container>            <!-- Render the occupying block only at the topmost U of the block to avoid repeats -->            <!-- Render the occupying block only at the topmost U of the block (highest slot number) to avoid repeats -->
+
+        </div>
+
+      </ng-container>            <ng-container *ngIf="shouldRenderBlock(slot, occ)">            <ng-container *ngIf="slot === (occ.start + occ.height - 1)">
+
+    </div>
+
+    <div class="rack-right">              <div class="device-block" [ngStyle]="{ height: (occ.height * 28) + 'px', background: occ.color || '#ffb74d' }" title="{{ occ.label }}">              <div class="device-block" [ngStyle]="{ height: (occ.height * 28) + 'px', background: occ.color || '#ffb74d' }" title="{{ occ.label }}">
+
+      <div *ngFor="let slot of getSlots()" class="slot-number">{{ slot }}</div>
+
+    </div>                <div class="device-label">{{ occ.label }}</div>                <div class="device-label">{{ occ.label }}</div>
+
+  </div>
+
+</div>              </div>              </div>
+
+
+            </ng-container>            </ng-container>
+
+          </ng-container>          </ng-container>
+
+        </div>        </div>
+
+      </ng-container>      </ng-container>
+
+    </div>    </div>
+
+    <div class="rack-right">    <div class="rack-right">
+
+      <div *ngFor="let slot of getSlots()" class="slot-number">{{ slot }}</div>      <div *ngFor="let slot of getSlots()" class="slot-number">{{ slot }}</div>
+
+    </div>    </div>
+
+  </div>  </div>
+
+</div></div>

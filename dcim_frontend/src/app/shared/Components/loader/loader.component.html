@@ -1,0 +1,10 @@
+<div class="loader-container" [class.overlay]="overlay" [class.inline]="!overlay">
+  <div class="loader-content">
+    <div class="spinner">
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
+    </div>
+    <span class="loader-text" *ngIf="text">{{ text }}</span>
+  </div>
+</div>

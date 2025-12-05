@@ -1,0 +1,39 @@
+<div class="page-container">
+
+    <div class="device-card">
+      <h2 class="section-title">{{ editData ? 'Edit Location' : 'Add Location' }}</h2>
+  
+      <form [formGroup]="locationForm" class="device-form" (ngSubmit)="saveLocation()">
+  
+        <div class="form-grid">
+  
+          <!-- Location ID -->
+          <div class="form-row">
+            <label class="form-label">Location ID <span class="required">*</span></label>
+            <input type="text" formControlName="locationId" />
+          </div>
+  
+          <!-- Location Name -->
+          <div class="form-row">
+            <label class="form-label">Location <span class="required">*</span></label>
+            <input type="text" formControlName="locationName" />
+          </div>
+  
+        </div>
+  
+        <div class="btn-row">
+          <button class="btn cancel" type="button" (click)="onCancel()">Cancel</button>
+  
+          <button class="btn primary" type="submit">
+            {{ editData ? 'Update' : 'Save' }}
+          </button>
+  
+          <button class="btn primary-outline" *ngIf="!editData" type="button" (click)="saveAndAddAnother()">
+            Save & Add Another
+          </button>
+        </div>
+  
+      </form>
+    </div>
+  </div>
+  

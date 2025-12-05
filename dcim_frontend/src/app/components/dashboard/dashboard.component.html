@@ -1,0 +1,55 @@
+<div class="dashboard-container">
+  
+  <!-- Loader -->
+  <app-loader *ngIf="loading" text="Loading dashboard..."></app-loader>
+
+  <!-- Dashboard Grid -->
+  <div class="grid" *ngIf="!loading && locations.length > 0">
+    <mat-card *ngFor="let loc of locations" class="stat-card">
+      <mat-card-header (click)="navigateToBuildings(loc,'')">
+        <div class="header-icon">
+          <img src="assets/images/location.png" alt="Location Icon" />
+        </div>
+        <div class="header-content">
+          <mat-card-title>{{ loc.name }}</mat-card-title>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="stats">
+          <div class="stat" (click)="navigateToBuildings(loc,'devices')">
+            <div class="stat-left">
+              <img src="assets/images/devices.png" alt="Devices Icon" class="stat-icon devices-icon" />
+              <span class="label">Devices</span>
+            </div>
+            <span class="value">{{ loc.total_devices }}</span>
+          </div>
+
+          <div class="stat" (click)="navigateToBuildings(loc,'racks')">
+            <div class="stat-left">
+              <img src="assets/images/racks.png" alt="Racks Icon" class="stat-icon racks-icon" />
+              <span class="label">Racks</span>
+            </div>
+            <span class="value">{{ loc.total_racks }}</span>
+          </div>
+
+          <div class="stat" (click)="navigateToBuildings(loc,'device_type')">
+            <div class="stat-left">
+              <img src="assets/images/device_types.png" alt="Device Types Icon" class="stat-icon types-icon" />
+              <span class="label">Device Types</span>
+            </div>
+            <span class="value">{{ loc.total_device_types }}</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && locations.length === 0">
+    <!-- <mat-icon class="empty-icon">location_off</mat-icon> -->
+    <p class="empty-text">No locations found</p>
+    <p class="empty-subtext">Data centers will appear here once configured</p>
+  </div>
+
+</div>

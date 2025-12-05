@@ -1,0 +1,194 @@
+<!-- Toolbar -->
+<div class="toolbar">
+  <!-- <div class="search-box">
+    <input type="text" (input)="applyFilters($event)" placeholder="Search records..." class="search-input" />
+  </div> -->
+  <button mat-raised-button color="primary" *ngIf="filterConfig?.length" (click)="openFilterDialog(filterDialog)">
+    Filters
+  </button>
+
+  <button mat-raised-button color="primary" (click)="openColumnConfig(columnConfigDialog)">Configure Columns</button>
+
+  <button mat-raised-button color="primary" (click)="onAdd()">Add</button>
+  <button mat-raised-button color="primary" (click)="exportCSV()">Export</button>
+  <input type="file" hidden #importer (change)="onImport($event)">
+  <button mat-raised-button color="primary" (click)="importer.click()">Import</button>
+</div>
+
+<!-- Active Filters -->
+<div class="active-filters" *ngIf="activeFilters.length">
+  <div class="filter-chip" *ngFor="let filter of activeFilters">
+    <span>{{ filter.label }}: <strong>{{ filter.displayValue }}</strong></span>
+    <button type="button" (click)="removeFilter(filter.key)">✕</button>
+  </div>
+  <button mat-flat-button color="warn" (click)="resetFilters()" style="margin-left: 12px;">Clear All</button>
+</div>
+
+<!-- Column configuration dialog -->
+<ng-template #columnConfigDialog>
+  <mat-dialog-content class="column-config-content">
+    <p class="column-config-subtitle">
+      Move fields between lists to control which columns are visible in the table.
+    </p>
+
+    <div class="dual-list">
+      <div class="list-panel">
+        <div class="panel-header">
+          <span>Available Columns</span>
+          <span class="count">{{ pendingAvailableKeys.length }}</span>
+        </div>
+        <div class="list-body">
+          <div class="empty-list" *ngIf="pendingAvailableKeys.length === 0">All columns selected</div>
+          <div class="list-item" *ngFor="let col of getAvailableColumnsForDialog()"
+            [class.active]="availableSelection.has(col.key)" (click)="toggleAvailableSelection(col.key)">
+            <div class="item-text">
+              <span class="item-label">{{ col.label }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-actions">
+        <button mat-flat-button color="primary" (click)="addSelectedColumns()"
+          [disabled]="availableSelection.size === 0">
+          Add
+        </button>
+        <button mat-flat-button color="warn" (click)="removeSelectedColumns()"
+          [disabled]="selectedSelection.size === 0">Remove
+        </button>
+      </div>
+
+      <div class="list-panel">
+        <div class="panel-header">
+          <span>Selected Columns</span>
+          <span class="count">{{ pendingSelectedKeys.length }}</span>
+        </div>
+        <div class="list-body">
+          <div class="empty-list" *ngIf="pendingSelectedKeys.length === 0">No columns selected</div>
+          <div class="list-item" *ngFor="let col of getSelectedColumnsForDialog()"
+            [class.active]="selectedSelection.has(col.key)" (click)="toggleSelectedSelection(col.key)">
+            <div class="item-text">
+              <span class="item-label">{{ col.label }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-flat-button color="primary" (click)="resetDialogToDefaults()">Reset</button>
+    <span class="spacer"></span>
+    <span class="visible-count">
+      Showing <strong>{{ pendingSelectedKeys.length }}</strong> of <strong>{{ configurableColumns.length }}</strong>
+      columns
+    </span>
+    <button mat-flat-button mat-dialog-close color="warn">Cancel</button>
+    <button mat-flat-button color="primary" (click)="saveDialogSelection()">Save</button>
+  </mat-dialog-actions>
+</ng-template>
+
+<!-- Table with Loader -->
+<div class="table-container">
+  <app-loader *ngIf="loading" [overlay]="true" text="Loading data..."></app-loader>
+
+  <div class="netbox-table-wrapper" *ngIf="!loading && hasData">
+    <table mat-table [dataSource]="dataSource" class="netbox-table">
+      <!-- Serial number column -->
+      <ng-container matColumnDef="_sr">
+        <th mat-header-cell *matHeaderCellDef>Sr.</th>
+        <td mat-cell *matCellDef="let row; let i = index">{{ offset + i + 1 }}</td>
+      </ng-container>
+      <ng-container *ngFor="let col of configurableColumns" [matColumnDef]="col.key">
+        <th mat-header-cell *matHeaderCellDef>{{ col.label }}</th>
+        <td mat-cell *matCellDef="let row">
+          <!-- Details Column (clickable) -->
+          <ng-container *ngIf="col.type == 'details'; else checkSpace">
+            <span class="clickable-cell" (click)="onCLickDetails(row[col.key])">
+              {{ row[col.key] }}
+            </span>
+          </ng-container>
+
+          <!-- SPACE UTILIZATION COLUMN -->
+          <ng-template #checkSpace>
+            <ng-container *ngIf="col.type === 'space'; else checkStatus">
+              <div class="space-bar-container">
+                <div class="space-bar">
+                  <div class="space-used" [style.width.%]="getUsedSpacePercent(row[col.key])"></div>
+                  <div class="space-available" [style.width.%]="getAvailableSpacePercent(row[col.key])"></div>
+                  <span class="space-label">{{ getSpaceDisplayValue(row[col.key]) }}</span>
+                </div>
+              </div>
+            </ng-container>
+          </ng-template>
+
+          <!-- Status Column (capsule badges) -->
+          <ng-template #checkStatus>
+            <ng-container *ngIf="col.type == 'status'; else checkAction">
+              <span class="status-capsule" [ngClass]="getStatusClass(row[col.key])">
+                {{ row[col.key] }}
+              </span>
+            </ng-container>
+          </ng-template>
+
+          <!-- Edit Action Column -->
+          <ng-template #checkAction>
+            <ng-container *ngIf="col.type == 'edit'; else normalCell">
+              <img src="assets/images/edit.png" class="edit-icon" (click)="onEdit(row);" matTooltip="Edit" />
+            </ng-container>
+          </ng-template>
+
+          <!-- Normal Text Column -->
+          <ng-template #normalCell>{{ row[col.key] }}</ng-template>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && isEmpty">
+    <p class="empty-text">No records found</p>
+    <p class="empty-subtext">Try adjusting your search or add a new record</p>
+  </div>
+</div>
+
+<mat-paginator *ngIf="totalCount > 10" [length]="totalCount" (page)="onPagination($event)" [pageSize]="pageSize" showFirstLastButtons></mat-paginator>
+
+<!-- Filter Dialog -->
+<ng-template #filterDialog>
+  <h2 mat-dialog-title>Filter Records</h2>
+  <mat-dialog-content class="filter-dialog-content">
+    <div class="filter-panel" *ngIf="filterConfig?.length; else noFiltersConfigured">
+      <div class="filter-grid">
+        <div class="filter-field" *ngFor="let filter of filterConfig">
+          <label>{{ filter.label }}</label>
+
+          <ng-container [ngSwitch]="filter.type">
+            <select *ngSwitchCase="'select'" [(ngModel)]="filterModel[filter.key]">
+              <option value="">Select {{ filter.label }}</option>
+              <option *ngFor="let option of filter.options" [ngValue]="option.value">{{ option.label }}</option>
+            </select>
+
+            <input *ngSwitchCase="'number'" type="number" [(ngModel)]="filterModel[filter.key]"
+              [placeholder]="filter.placeholder || ('Enter ' + filter.label)" />
+
+            <input *ngSwitchCase="'date'" type="date" [(ngModel)]="filterModel[filter.key]" />
+
+            <input *ngSwitchDefault type="text" [(ngModel)]="filterModel[filter.key]"
+              [placeholder]="filter.placeholder || ('Search ' + filter.label)" />
+          </ng-container>
+        </div>
+      </div>
+    </div>
+    <ng-template #noFiltersConfigured>
+      <div class="no-filters">No filter configuration provided for this table.</div>
+    </ng-template>
+  </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+    <button mat-flat-button mat-dialog-close color="warn">Cancel</button>
+    <button mat-flat-button color="primary" (click)="applyFilters()">Apply Filters</button>
+  </mat-dialog-actions>
+</ng-template>

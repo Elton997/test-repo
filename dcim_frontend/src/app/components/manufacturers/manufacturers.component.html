@@ -1,0 +1,13 @@
+<app-dynamic-table
+    [title]="'Make'"
+    [columns]="columns"
+    [data]="makelist"
+    [pageSize]="15"
+    [loading]="loading"
+    [totalCount]="totalCount" 
+    [offset]="offset" 
+    [filterConfig]="filters"
+    [appliedFilters]="appliedFilters" 
+    (pageChange)="onPageChange($event)" 
+    (filtersChanged)="onFiltersChanged($event)">
+</app-dynamic-table>

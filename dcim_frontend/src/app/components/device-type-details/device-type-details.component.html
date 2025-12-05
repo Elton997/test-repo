@@ -1,0 +1,58 @@
+<div class="device-type-details-container">
+  
+    <!-- Header Section -->
+    <div class="details-header">
+      <div class="header-content">
+        <h1 class="device-name">{{ deviceType.type_name }}</h1>
+        <span class="badge badge-success">Active</span>
+      </div>
+    </div>
+  
+    <div class="details-grid">
+  
+      <!-- LEFT COLUMN ONLY -->
+      <div class="left-column">
+        <div class="details-section primary-section">
+          <h2 class="section-title">Device Type Info</h2>
+  
+          <div class="info-group">
+  
+            <div class="info-row">
+              <span class="label">Device Type Name</span>
+              <span class="value">{{ deviceType.type_name }}</span>
+            </div>
+  
+            <div class="info-row">
+              <span class="label">Manufacturer</span>
+              <span class="value">{{ deviceType.manufacturer }}</span>
+            </div>
+  
+            <div class="info-row">
+              <span class="label">Height (U)</span>
+              <span class="value">{{ deviceType.height_u }}</span>
+            </div>
+  
+            <div class="info-row">
+              <span class="label">Total Associated Models</span>
+              <span class="value">{{ deviceType.total_models }}</span>
+            </div>
+  
+            <div class="info-row">
+              <span class="label">Total Associated Devices</span>
+              <span class="value">{{ deviceType.total_devices }}</span>
+            </div>
+  
+          </div>
+  
+        </div>
+      </div>
+  
+    </div>
+  
+    <!-- Comments Section (Optional) -->
+    <div class="details-section comments-section" *ngIf="deviceType.comments">
+      <h2 class="section-title">Comments</h2>
+      <p class="comments-text">{{ deviceType.comments }}</p>
+    </div>
+  
+  </div>

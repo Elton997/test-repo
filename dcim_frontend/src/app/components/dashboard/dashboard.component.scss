@@ -1,0 +1,256 @@
+.dashboard-container {
+  padding: 24px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* GRID with stagger */
+.grid {
+  display: grid;
+  grid-gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* CARD - Complete redesign */
+.stat-card {
+  position: relative;
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--dcim-surface-elevated);
+  border: 1px solid var(--dcim-border);
+  transition: all var(--transition-base);
+  animation: fadeInUp 0.5s var(--ease-out-expo) both;
+  
+  /* Stagger animation for cards */
+  @for $i from 1 through 12 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 60}ms;
+    }
+  }
+
+  /* Decorative gradient accent line */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--dcim-navy), var(--dcim-gold));
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--dcim-navy-light);
+    
+    &::before {
+      opacity: 1;
+    }
+    
+    .header-icon {
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+}
+
+/* HEADER - Branded gradient */
+mat-card-header {
+  background: linear-gradient(135deg, var(--dcim-navy) 0%, var(--dcim-navy-dark) 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 16px 16px 0 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  
+  /* Subtle pattern overlay */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle, rgba(241, 183, 14, 0.15) 0%, transparent 70%);
+    transform: translate(30%, -30%);
+    pointer-events: none;
+  }
+}
+
+/* Header icon badge */
+.header-icon {
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+  overflow: hidden;
+  
+  mat-icon {
+    font-size: 26px;
+    width: 20px;
+    height: 20px;
+    color: var(--dcim-gold);
+  }
+  
+  img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    transition: all var(--transition-fast);
+  }
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  
+  ::ng-deep .mat-mdc-card-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.header-subtitle {
+  font-size: 12px;
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+}
+
+/* CONTENT */
+mat-card-content {
+  padding: 20px;
+}
+
+/* STAT LIST */
+.stats {
+  margin-top: 4px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(29, 60, 106, 0.08);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    padding-left: 8px;
+    background: rgba(29, 60, 106, 0.02);
+    border-radius: 8px;
+    margin: 0 -8px;
+    padding-right: 8px;
+    
+    .stat-icon {
+      transform: scale(1.15);
+    }
+  }
+
+  .stat-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .label {
+    font-weight: 500;
+    font-size: 14px;
+    color: #64748b;
+    letter-spacing: 0.01em;
+  }
+
+  .value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--dcim-navy);
+    font-family: var(--font-mono);
+    background: linear-gradient(135deg, var(--dcim-navy), var(--dcim-navy-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+.stat:last-child {
+  border-bottom: none;
+}
+
+/* Stat icons styling for images */
+.stat-icon {
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  border-radius: 10px;
+  object-fit: contain;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.devices-icon {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.racks-icon {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.types-icon {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  animation: fadeIn 0.4s ease-out;
+  
+  .empty-icon {
+    font-size: 72px;
+    width: 72px;
+    height: 72px;
+    color: var(--dcim-navy);
+    opacity: 0.3;
+    margin-bottom: 20px;
+  }
+  
+  .empty-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #475569;
+    margin: 0 0 8px;
+  }
+  
+  .empty-subtext {
+    font-size: 14px;
+    color: #94a3b8;
+    margin: 0;
+  }
+}

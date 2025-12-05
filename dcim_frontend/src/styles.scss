@@ -1,0 +1,306 @@
+@use '@angular/material' as mat;
+@include mat.core();
+
+/* ----------------------------------------------------
+   Primary – Pigment Red (#E91F2B)
+----------------------------------------------------- */
+$primary-palette: mat.m2-define-palette((
+  50:  #e6ebf3,
+  100: #c0cddd,
+  200: #97abc6,
+  300: #6c89af,
+  400: #4d6f9d,
+  500: #1D3C6A, // base color
+  600: #19365f,
+  700: #143054,
+  800: #102a49,
+  900: #081f36,
+  A100: #8aaaff,
+  A200: #5785ff,
+  A400: #245fff,
+  A700: #0c4dff,
+
+  contrast: (
+    50:  black,
+    100: black,
+    200: black,
+    300: white,
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: black,
+    A200: white,
+    A400: white,
+    A700: white,
+  )
+));
+/* ----------------------------------------------------
+   Accent – Spanish Yellow (#F1B70E)
+----------------------------------------------------- */
+$accent-palette: mat.m2-define-palette((
+  50:  #fff5da,
+  100: #ffe7ad,
+  200: #ffd77e,
+  300: #ffc74e,
+  400: #fdbb2a,
+  500: #F1B70E,
+  600: #d9a50c,
+  700: #c0930b,
+  800: #a68108,
+  900: #7f6305,
+  A100: #ffedb3,
+  A200: #ffdf80,
+  A400: #ffd04d,
+  A700: #ffc733,
+
+  contrast: (
+    50:  black,
+    100: black,
+    200: black,
+    300: black,
+    400: black,
+    500: black,
+    600: black,
+    700: black,
+    800: white,
+    900: white,
+    A100: black,
+    A200: black,
+    A400: black,
+    A700: black,
+  )
+));
+
+/* ----------------------------------------------------
+   Warn – Deep Carrot Orange (#E07122)
+----------------------------------------------------- */
+$warn-palette: mat.m2-define-palette((
+  50 :  #fde8e9,
+  100:  #fac5c8,
+  200:  #f59ea3,
+  300:  #ef767e,
+  400:  #ea5863,
+  500:  #CC202D, // base color
+  600:  #b81c28,
+  700:  #a21722,
+  800:  #8c131d,
+  900:  #620b13,
+
+  A100: #ffb3b8,
+  A200: #ff8088,
+  A400: #ff4d58,
+  A700: #ff3340,
+
+  contrast: (
+    50 : black,
+    100: black,
+    200: black,
+    300: white,
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+
+    A100: black,
+    A200: white,
+    A400: white,
+    A700: white,
+  )
+));
+
+
+/* ----------------------------------------------------
+   Build Theme
+----------------------------------------------------- */
+
+$myapp-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $primary-palette,
+    accent: $accent-palette,
+    warn: $warn-palette,
+  )
+));
+
+@include mat.all-component-themes($myapp-theme);
+
+/* ============================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+============================================ */
+:root {
+  /* Colors */
+  --dcim-navy: #1D3C6A;
+  --dcim-navy-dark: #152B4A;
+  --dcim-navy-light: #2a5090;
+  --dcim-gold: #F1B70E;
+  --dcim-gold-glow: rgba(241, 183, 14, 0.25);
+  --dcim-red: #CC202D;
+  --dcim-surface: #f8fafc;
+  --dcim-surface-elevated: #ffffff;
+  --dcim-border: rgba(29, 60, 106, 0.12);
+  
+  /* Typography */
+  --font-primary: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(29, 60, 106, 0.08);
+  --shadow-md: 0 4px 12px rgba(29, 60, 106, 0.12);
+  --shadow-lg: 0 12px 40px rgba(29, 60, 106, 0.18);
+  --shadow-glow: 0 0 30px var(--dcim-gold-glow);
+  
+  /* Transitions */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast: 150ms var(--ease-out-expo);
+  --transition-base: 250ms var(--ease-out-expo);
+  --transition-slow: 400ms var(--ease-out-expo);
+}
+
+/* ============================================
+   BASE RESET & GLOBAL STYLES
+============================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-primary);
+  background: var(--dcim-surface);
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   UTILITY CLASSES
+============================================ */
+.error {
+  color: var(--dcim-red);
+  font-size: 12px;
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+.global-error {
+  text-align: center;
+  color: var(--dcim-red);
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(204, 32, 45, 0.08);
+  border-radius: 8px;
+  border: 1px solid rgba(204, 32, 45, 0.2);
+}
+
+.cursor {
+  cursor: pointer;
+}
+
+/* ============================================
+   ANIMATION KEYFRAMES
+============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--dcim-gold-glow); }
+  50% { box-shadow: 0 0 20px 4px var(--dcim-gold-glow); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Page entry animation helper */
+.animate-in {
+  animation: fadeInUp 0.5s var(--ease-out-expo) both;
+}
+
+/* Stagger children animation */
+.stagger-children > * {
+  animation: fadeInUp 0.4s var(--ease-out-expo) both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+
+/* ============================================
+   SCROLLBAR STYLING
+============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(29, 60, 106, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(29, 60, 106, 0.35);
+}
+
+/* ============================================
+   LAYOUT BACKGROUND ENHANCEMENT
+============================================ */
+.layout-main {
+  background: 
+    radial-gradient(ellipse at 100% 0%, rgba(29, 60, 106, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 0% 100%, rgba(241, 183, 14, 0.04) 0%, transparent 50%),
+    var(--dcim-surface);
+}

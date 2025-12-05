@@ -1,0 +1,16 @@
+<header class="header">
+  <div class="header-left">
+    <img *ngIf="!hideSidebar" src="assets/images/left_arrow_1.png" class="back-btn cursor" alt="DCIM Logo"
+      (click)="goBack()" />
+    <div class="header-title">{{ title }}</div>
+  </div>
+
+  <div *ngIf="!hideSidebar && dashboardLoc">
+    {{ dashboardLoc }}
+  </div>
+
+  <div class="header-right">
+    <span class="user-name">Welcome, {{ user?.full_name }}</span>
+    <button class="logout-btn" (click)="logout()">Logout</button>
+  </div>
+</header>

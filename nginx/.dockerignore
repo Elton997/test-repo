@@ -1,0 +1,47 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+docs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# SSL certificates (should be mounted, not copied)
+*.pem
+*.key
+*.crt
+*.cer
+ssl/
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Build artifacts
+*.o
+*.a
+*.so
+dist/
+build/
+

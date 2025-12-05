@@ -1,0 +1,110 @@
+<div class="page-container">
+
+  <div class="rack-card">
+    <h2 class="section-title">Rack</h2>
+
+    <form [formGroup]="rackForm" class="rack-form" (ngSubmit)="saveRack()">
+
+      <div class="form-grid">
+
+        <!-- Location -->
+        <div class="form-row">
+          <label class="form-label">Location <span class="required">*</span></label>
+          <select formControlName="location">
+            <option value="">Select location</option>
+            <option *ngFor="let loc of locations" [ngValue]="loc.name">{{ loc.name }}</option>
+          </select>
+        </div>
+
+        <!-- Building -->
+        <div class="form-row">
+          <label class="form-label">Building <span class="required">*</span></label>
+          <select formControlName="building">
+            <option value="">Select building</option>
+            <option *ngFor="let b of filteredBuildings" [ngValue]="b.name">{{ b.name }}</option>
+          </select>
+        </div>
+
+        <!-- Wing -->
+        <div class="form-row">
+          <label class="form-label">Wing <span class="required">*</span></label>
+          <select formControlName="wing">
+            <option value="">Select wing</option>
+            <option *ngFor="let w of filteredWings" [ngValue]="w.name">{{ w.name }}</option>
+          </select>
+        </div>
+
+        <!-- Floor -->
+        <div class="form-row">
+          <label class="form-label">Floor <span class="required">*</span></label>
+          <select formControlName="floor">
+            <option value="">Select floor</option>
+            <option *ngFor="let f of filteredFloors" [ngValue]="f.name">{{ f.name }}</option>
+          </select>
+        </div>
+
+        <!-- Datacentre -->
+        <div class="form-row">
+          <label class="form-label">Data Centre <span class="required">*</span></label>
+          <select formControlName="datacentre">
+            <option value="">Select data centre</option>
+            <option *ngFor="let dc of filteredDCs" [ngValue]="dc.name">{{ dc.name }}</option>
+          </select>
+        </div>
+
+        <!-- Rack Name -->
+        <div class="form-row">
+          <label class="form-label">Rack Name <span class="required">*</span></label>
+          <input type="text" formControlName="rackName" placeholder="e.g. RACK-01" />
+        </div>
+
+        <!-- Status -->
+        <div class="form-row">
+          <label class="form-label">Status <span class="required">*</span></label>
+          <select formControlName="status">
+            <option value="">Select status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+
+        <!-- Height -->
+        <div class="form-row">
+          <label class="form-label">Height</label>
+          <input formControlName="height" readonly />
+        </div>
+
+        <!-- Devices -->
+        <div class="form-row">
+          <label class="form-label">Devices</label>
+          <input formControlName="devices" readonly />
+        </div>
+
+        <!-- Space -->
+        <div class="form-row">
+          <label class="form-label">Occupied Space</label>
+          <input formControlName="space" readonly />
+        </div>
+
+      </div>
+
+      <div class="btn-row">
+
+        <button mat-flat-button color="warn" type="button">
+          Cancel
+        </button>
+
+        <button mat-flat-button color="primary" type="submit">
+          {{ editData ? 'Update' : 'Save' }}
+        </button>
+
+        <button mat-flat-button color="accent" type="button" *ngIf="!editData">
+          Save & Add Another
+        </button>
+
+      </div>
+
+
+    </form>
+  </div>
+</div>
