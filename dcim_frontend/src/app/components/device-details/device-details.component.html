@@ -1,10 +1,11 @@
+<ng-container *ngIf="device; else loadingTemplate">
 <div class="device-details-container">
   
   <!-- Header Section -->
   <div class="details-header">
     <div class="header-content">
       <h1 class="device-name">{{ device.device_name }}</h1>
-      <span class="badge badge-success">{{ device.status }}</span>
+      <span class="badge" [ngClass]="getStatusBadgeClass()">{{ device.status }}</span>
     </div>
   </div>
 
@@ -16,18 +17,18 @@
         <h2 class="section-title">Device Info</h2>
         <div class="info-group">
           <div class="info-row"><span class="label">Device Name</span><span class="value">{{ device.device_name }}</span></div>
-          <div class="info-row"><span class="label">IP Address</span><span class="value">{{ device.ip_address }}</span></div>
+          <div class="info-row"><span class="label">IP Address</span><span class="value">{{ device.ip_address || 'N/A' }}</span></div>
           <div class="info-row"><span class="label">Status</span><span class="value">{{ device.status }}</span></div>
-          <div class="info-row"><span class="label">Location</span><span class="value">{{ device.location }}</span></div>
-          <div class="info-row"><span class="label">Building</span><span class="value">{{ device.building }}</span></div>
-          <div class="info-row"><span class="label">Wing</span><span class="value">{{ device.wing }}</span></div>
-          <div class="info-row"><span class="label">Floor</span><span class="value">{{ device.floor }}</span></div>
-          <div class="info-row"><span class="label">Data Center</span><span class="value">{{ device.data_center }}</span></div>
-          <div class="info-row"><span class="label">Room</span><span class="value">{{ device.room }}</span></div>
-          <div class="info-row"><span class="label">Rack</span><span class="value">{{ device.rack }}</span></div>
-          <div class="info-row"><span class="label">Rack Slot (U Position)</span><span class="value">{{ device.rack_slot }}</span></div>
-          <div class="info-row"><span class="label">Role</span><span class="value">{{ device.role }}</span></div>
-          <div class="info-row"><span class="label">PO Number</span><span class="value">{{ device.po_number }}</span></div>
+          <div class="info-row"><span class="label">Location</span><span class="value">{{ device.location || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Building</span><span class="value">{{ device.building || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Wing</span><span class="value">{{ device.wing || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Floor</span><span class="value">{{ device.floor || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Data Center</span><span class="value">{{ device.data_center || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Room</span><span class="value">{{ device.room || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Rack</span><span class="value">{{ device.rack || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Rack Slot (U Position)</span><span class="value">{{ device.rack_slot || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Role</span><span class="value">{{ device.role || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">PO Number</span><span class="value">{{ device.po_number || 'N/A' }}</span></div>
         </div>
       </div>
 
@@ -35,20 +36,20 @@
       <div class="details-section specs-section">
         <h2 class="section-title">Specifications</h2>
         <div class="info-group">
-          <div class="info-row"><span class="label">Manufacturer</span><span class="value">{{ device.manufacturer }}</span></div>
-          <div class="info-row"><span class="label">Device Type</span><span class="value">{{ device.device_type }}</span></div>
-          <div class="info-row"><span class="label">Model</span><span class="value">{{ device.model }}</span></div>
-          <div class="info-row"><span class="label">Height</span><span class="value">{{ device.height }}</span></div>
-          <div class="info-row"><span class="label">Serial Number</span><span class="value">{{ device.serial_number }}</span></div>
-          <div class="info-row"><span class="label">Asset Tag</span><span class="value">{{ device.asset_tag }}</span></div>
-          <div class="info-row"><span class="label">Created Date</span><span class="value">{{ device.created_date }}</span></div>
-          <div class="info-row"><span class="label">Last Updated</span><span class="value">{{ device.last_updated }}</span></div>
-          <div class="info-row"><span class="label">Asset Owner</span><span class="value">{{ device.asset_owner }}</span></div>
-          <div class="info-row"><span class="label">Warranty Start Date</span><span class="value">{{ device.warranty_start_date }}</span></div>
-          <div class="info-row"><span class="label">Warranty End Date</span><span class="value">{{ device.warranty_end_date }}</span></div>
-          <div class="info-row"><span class="label">AMC Start Date</span><span class="value">{{ device.amc_start_date }}</span></div>
-          <div class="info-row"><span class="label">AMC End Date</span><span class="value">{{ device.amc_end_date }}</span></div>
-          <div class="info-row"><span class="label">Asset User</span><span class="value">{{ device.asset_user }}</span></div>
+          <div class="info-row"><span class="label">Manufacturer</span><span class="value">{{ device.manufacturer || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Device Type</span><span class="value">{{ device.device_type || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Model</span><span class="value">{{ device.model || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Height</span><span class="value">{{ device.height || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Serial Number</span><span class="value">{{ device.serial_number || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Asset Tag</span><span class="value">{{ device.asset_tag || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Created Date</span><span class="value">{{ device.created_date || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Last Updated</span><span class="value">{{ device.last_updated || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Asset Owner</span><span class="value">{{ device.asset_owner || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Warranty Start Date</span><span class="value">{{ device.warranty_start_date || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Warranty End Date</span><span class="value">{{ device.warranty_end_date || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">AMC Start Date</span><span class="value">{{ device.amc_start_date || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">AMC End Date</span><span class="value">{{ device.amc_end_date || 'N/A' }}</span></div>
+          <div class="info-row"><span class="label">Asset User</span><span class="value">{{ device.asset_user || 'N/A' }}</span></div>
         </div>
       </div>
     </div>
@@ -59,10 +60,10 @@
         <h2 class="section-title">Rack Views</h2>
         <div class="rack-views-container">
           <div class="rack-view-item">
-            <app-dynamic-rack [units]="42" [occupied]="getOccupied()" [viewType]="'front'" [title]="'Front'" (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
+            <app-dynamic-rack [units]="getRackUnits()" [occupied]="getOccupied()" [viewType]="'front'" [title]="'Front'" (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
           </div>
           <div class="rack-view-item">
-            <app-dynamic-rack [units]="42" [occupied]="getOccupied()" [viewType]="'back'" [title]="'Back'" (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
+            <app-dynamic-rack [units]="getRackUnits()" [occupied]="getOccupied()" [viewType]="'back'" [title]="'Back'" (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
           </div>
         </div>
       </div>
@@ -70,8 +71,19 @@
   </div>
 
   <!-- Comments section at the end (full width) -->
-  <div class="details-section comments-section" *ngIf="device.comments">
-    <h2 class="section-title">Comments</h2>
-    <p class="comments-text">{{ device.comments }}</p>
+  <div class="details-section comments-section">
+    <h2 class="section-title">Description</h2>
+    <p class="comments-text">{{ device.comments || 'No description available.' }}</p>
   </div>
 </div>
+</ng-container>
+
+<ng-template #loadingTemplate>
+  <div class="device-details-container">
+    <div class="details-header">
+      <div class="header-content">
+        <h1 class="device-name">Loading device details...</h1>
+      </div>
+    </div>
+  </div>
+</ng-template>

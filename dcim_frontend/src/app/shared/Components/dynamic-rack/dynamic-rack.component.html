@@ -1,6 +1,6 @@
 <div class="dynamic-rack-container">
   <div class="rack-header">
-    <h3 class="rack-title">{{ title }} - {{ viewType === 'front' ? 'Front View' : 'Back View' }}</h3>
+    <h3 class="rack-title">{{ viewType === 'front' ? 'Front View' : 'Back View' }}</h3>
     <span class="rack-info">Rack: {{ units }}U — Devices: {{ occupied.length || 0 }}</span>
   </div>
 
@@ -23,7 +23,7 @@
               <ng-container *ngIf="shouldRenderBlock(slot, occ)">
                 <div 
                   class="device-block" 
-                  [ngStyle]="{ height: (occ.height * 28) + 'px' }" 
+                  [ngStyle]="getDeviceBlockStyle(occ)" 
                   [title]="occ.label"
                   (click)="onDeviceClick(occ)"
                   [matTooltip]="occ.label"
@@ -32,7 +32,7 @@
                 </div>
               </ng-container>
             </ng-container>
-            <div class="empty-slot-hover" *ngIf="!isOccupied(slot)">
+            <div class="empty-slot-hover" *ngIf="!isOccupied(slot) && viewType == 'front'">
               Add Device
             </div>
           </div>

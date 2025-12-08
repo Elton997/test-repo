@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TitleService } from '../../shared/Services/title.service';
 import { DynamicRackComponent } from '../../shared/Components/dynamic-rack/dynamic-rack.component';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Menu, SubMenu } from '../../menu.enum';
+import { Subscription } from 'rxjs';
+import { ListService } from '../../services/list.service';
 
 @Component({
   selector: 'app-rack-details',
@@ -12,49 +14,100 @@ import { Menu, SubMenu } from '../../menu.enum';
   templateUrl: './rack-details.component.html',
   styleUrl: './rack-details.component.scss'
 })
-export class RackDetailsComponent implements OnInit {
+export class RackDetailsComponent implements OnInit, OnDestroy {
+  rack: any = null;
+  occupiedDevices: Array<{ start: number; height: number; label?: string; color?: string }> = [];
+  loading = false;
+  private subscriptions = new Subscription();
 
-  rack = {
-    rack_name: 'RACK-001',
-    location: 'Mumbai',
-    building: 'B1',
-    wing: 'A',
-    floor: '2',
-    data_centre: 'MUM-DC1',
-    status: 'Active',
-    width_mm: 600,
-    height_u: 2,
-    device_count: 18,
-    space_utilisation: '70%',
-    available_space: '12U',
-    comments: 'Primary rack for core network aggregation.'
-  };
-
-  constructor(private router: Router, private titleService: TitleService) { }
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private titleService: TitleService,
+    private listService: ListService
+  ) { }
 
   ngOnInit(): void {
-    this.titleService.updateTitle('RACK DETAILS');
+    const rackName = this.route.snapshot.paramMap.get('rackId');
+    if (rackName) {
+      this.fetchRackDetails(rackName);
+    } else {
+      this.router.navigate([`${Menu.Rack_Management}/${SubMenu.Racks}`]);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  fetchRackDetails(rackName: string) {
+    this.loading = true;
+    const sub = this.listService.getDetails('racks', rackName).subscribe({
+      next: (res: any) => {
+        const data = res?.data;
+        this.rack = this.mapRackDetails(data, rackName);
+        this.occupiedDevices = this.buildOccupiedDevices(data?.devices);
+        if (this.rack?.rack_name) {
+          this.titleService.updateTitle(`Rack: ${this.rack.rack_name}`);
+        }
+        this.loading = false;
+      },
+      error: (err: any) => {
+        console.error('Error fetching rack details:', err);
+        this.loading = false;
+      }
+    });
+
+    this.subscriptions.add(sub);
+  }
+
+  private mapRackDetails(data: any, fallbackName: string) {
+    if (!data) return null;
+    const stats = data.stats || {};
+    const utilization = stats.utilization_percent;
+
+    return {
+      rack_name: data.name || fallbackName,
+      location: data.location?.name,
+      building: data.building?.name,
+      wing: data.wing?.name,
+      floor: data.floor?.name,
+      data_centre: data.datacenter?.name,
+      status: data.status || 'Unknown',
+      width_mm: data.width,
+      height_u: data.height,
+      device_count: stats.total_devices ?? (data.devices?.length || 0),
+      space_utilisation: utilization !== undefined && utilization !== null ? `${utilization}%` : undefined,
+      available_space: stats.available_space !== undefined && stats.available_space !== null ? `${stats.available_space}U` : undefined,
+      comments: data.description
+    };
+  }
+
+  private buildOccupiedDevices(devices: any[] = []) {
+    return devices
+      .filter(d => d && (d.position !== undefined && d.position !== null))
+      .map(d => ({
+        start: Number(d.position) || 1,
+        height: Number(d.space_required) || 1,
+        label: d.name,
+        color: d.status === 'active' ? '#FFC107' : undefined
+      }));
+  }
+
+  getRackUnits(): number {
+    return this.rack?.height_u || 42;
   }
 
   getStatusBadgeClass(): string {
-    return `badge-${this.rack.status}`;
+    return this.rack?.status ? `badge-${this.rack.status}` : '';
   }
 
   getOccupied() {
-    // Interpret rack_slot as bottom-based U (number) or top; adjust as needed
-    const slot = parseInt(String(this.rack.rack_name), 10) || 1;
-    // Parse numeric height from strings like '4U' or numbers
-    const height = parseInt(String(this.rack.height_u || '1').replace(/[^0-9]/g, ''), 10) || 1;
-    // In our RackViewComponent, start is the bottom U number. If your rack_slot is top-based,
-    // convert it here. Currently we assume rack_slot is bottom-based.
-    const occupied = [{ start: slot, height: height, label: this.rack.rack_name }];
-    console.log('getOccupied()', { slot, height, occupied });
-    return occupied;
+    return this.occupiedDevices;
   }
 
 
   onDeviceClick(event: any) {
-    console.log("Device click event:", event);
     // Empty slot → Add Device page
     if (event.empty) {
       this.router.navigate([`${Menu.Device_Management}/${SubMenu.Devices}/add`]);

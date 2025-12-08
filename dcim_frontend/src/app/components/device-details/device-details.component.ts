@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DynamicRackComponent } from '../../shared/Components/dynamic-rack/dynamic-rack.component';
 import { TitleService } from '../../shared/Services/title.service';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Menu, SubMenu } from '../../menu.enum';
+import { Subscription } from 'rxjs';
+import { ListService } from '../../services/list.service';
 
 @Component({
   selector: 'app-device-details',
@@ -12,69 +14,148 @@ import { Menu, SubMenu } from '../../menu.enum';
   templateUrl: './device-details.component.html',
   styleUrl: './device-details.component.scss'
 })
-export class DeviceDetailsComponent implements OnInit {
+export class DeviceDetailsComponent implements OnInit, OnDestroy {
+  device: any = null;
+  occupiedDevices: Array<{ start: number; height: number; label?: string; color?: string }> = [];
+  loading = false;
+  private subscriptions = new Subscription();
 
-  // Sample device data - in real app, this would come from a service
-  device = {
-    device_name: 'dmi01-r01-s46',
-    ip_address: '192.168.1.10',
-    status: 'Active',
-    location: 'Building A, Wing B, Floor 2, Room 101',
-    building: 'Building A',
-    wing: 'Wing B',
-    floor: '2',
-    data_center: 'DMI Data Center',
-    room: '101',
-    rack: 'A42',
-    rack_slot: '10',
-    role: 'Router',
-    po_number: 'PO-2024-0012',
-    manufacturer: 'Juniper',
-    device_type: 'MX480',
-    model: 'MX480-DC',
-    height: '4U',
-    serial_number: 'JX924U45D001',
-    asset_tag: 'AT-2024-0047',
-    created_date: '2023-06-15',
-    last_updated: '2024-11-20',
-    asset_owner: 'IT Department',
-    warranty_start_date: '2023-06-15',
-    warranty_end_date: '2026-06-15',
-    amc_start_date: '2023-06-15',
-    amc_end_date: '2026-06-15',
-    asset_user: 'John Doe',
-    comments: 'Core router for data center routing and backbone connectivity.',
-  };
-
-  constructor(private router: Router, private titleService: TitleService) { }
-
+  constructor(
+    private router: Router,
+    private route: ActivatedRoute,
+    private titleService: TitleService,
+    private listService: ListService
+  ) { }
 
   ngOnInit(): void {
-    this.titleService.updateTitle('DEVICE DETAILS');
-    console.log('DeviceDetailsComponent initialized', { deviceName: this.device.device_name, rack: this.device.rack });
+    const deviceName = this.route.snapshot.paramMap.get('deviceID');
+    if (deviceName) {
+      this.fetchDeviceDetails(deviceName);
+    } else {
+      this.router.navigate([`${Menu.Device_Management}/${SubMenu.Devices}`]);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+
+  fetchDeviceDetails(deviceName: string) {
+    this.loading = true;
+    const sub = this.listService.getDeviceDetails(deviceName).subscribe({
+      next: (res: any) => {
+        const data = res?.data;
+        this.device = this.mapDeviceDetails(data, deviceName);
+        // Build occupied devices from the devices array (all devices in the same rack)
+        // Pass current device name to differentiate it from others
+        this.occupiedDevices = this.buildOccupiedDevices(data?.devices || [], deviceName);
+        if (this.device?.device_name) {
+          this.titleService.updateTitle(`Device: ${this.device.device_name}`);
+        }
+        this.loading = false;
+      },
+      error: (err: any) => {
+        console.error('Error fetching device details:', err);
+        this.loading = false;
+      }
+    });
+
+    this.subscriptions.add(sub);
+  }
+
+  private mapDeviceDetails(data: any, fallbackName: string) {
+    if (!data) return null;
+
+    // Build location string from components
+    const locationParts = [
+      data.building?.name,
+      data.wing?.name,
+      data.floor?.name
+    ].filter(Boolean);
+    const location = locationParts.length > 0 ? locationParts.join(', ') : data.location?.name || '';
+
+    // Format height
+    const height = data.device_type?.height ? `${data.device_type.height}U` : null;
+
+    // Format dates
+    const formatDate = (date: any) => {
+      if (!date) return null;
+      if (typeof date === 'string') return date.split('T')[0]; // Extract date part from ISO string
+      return date;
+    };
+
+    return {
+      device_name: data.name || fallbackName,
+      ip_address: data.ip || null,
+      status: data.status || 'Unknown',
+      location: location,
+      building: data.building?.name || null,
+      wing: data.wing?.name || null,
+      floor: data.floor?.name || null,
+      data_center: data.datacenter?.name || null,
+      room: null, // Not available in API response
+      rack: data.rack?.name || null,
+      rack_slot: data.position || null,
+      role: null, // Not available in API response
+      po_number: data.po_number || null,
+      manufacturer: data.make?.name || null,
+      device_type: data.device_type?.name || null,
+      model: data.device_type?.model?.name || null,
+      height: height,
+      serial_number: data.serial_no || null,
+      asset_tag: null, // Not available in API response
+      created_date: formatDate(data.created_at),
+      last_updated: formatDate(data.last_updated),
+      asset_owner: data.application?.asset_owner?.name || null,
+      warranty_start_date: formatDate(data.warranty?.start_date),
+      warranty_end_date: formatDate(data.warranty?.end_date),
+      amc_start_date: formatDate(data.amc?.start_date),
+      amc_end_date: formatDate(data.amc?.end_date),
+      asset_user: data.asset_user || null,
+      comments: data.description || null,
+      rack_height: data.rack?.height || 42, // Default to 42U if not available
+    };
+  }
+
+  private buildOccupiedDevices(devices: any[] = [], currentDeviceName: string = '') {
+    return devices
+      .filter(d => d && (d.position !== undefined && d.position !== null))
+      .map(d => {
+        const isCurrentDevice = d.name && currentDeviceName && 
+                                d.name.toLowerCase() === currentDeviceName.toLowerCase();
+        
+        // Current device gets highlighted color, others get grayed out (decreased intensity)
+        let color: string | undefined;
+        if (isCurrentDevice) {
+          color = '#FFC107'; // Bright amber for selected device
+        } else {
+          color = '#b0b0b0'; // Light gray (decreased intensity) for other devices
+        }
+        
+        return {
+          start: Number(d.position) || 1,
+          height: Number(d.space_required) || 1,
+          label: d.name,
+          color: color
+        };
+      });
+  }
+
+  getRackUnits(): number {
+    return this.device?.rack_height || 42;
   }
 
   getStatusBadgeClass(): string {
-    return `badge-${this.device.status}`;
+    return this.device?.status ? `badge-${this.device.status.toLowerCase()}` : '';
   }
 
   /** Build occupied array for RackViewComponent based on device rack slot and height */
   getOccupied() {
-    // Interpret rack_slot as bottom-based U (number) or top; adjust as needed
-    const slot = parseInt(String(this.device.rack_slot), 10) || 1;
-    // Parse numeric height from strings like '4U' or numbers
-    const height = parseInt(String(this.device.height || '1').replace(/[^0-9]/g, ''), 10) || 1;
-    // In our RackViewComponent, start is the bottom U number. If your rack_slot is top-based,
-    // convert it here. Currently we assume rack_slot is bottom-based.
-    const occupied = [{ start: slot, height: height, label: this.device.device_name }];
-    console.log('getOccupied()', { slot, height, occupied });
-    return occupied;
+    // The occupiedDevices already contains all devices in the rack including the current one
+    return this.occupiedDevices;
   }
 
-
   onDeviceClick(event: any) {
-    console.log("Device click event:", event);
-
     // Empty slot → Add Device page
     if (event.empty) {
       this.router.navigate([`${Menu.Device_Management}/${SubMenu.Devices}/add`]);
@@ -85,5 +166,4 @@ export class DeviceDetailsComponent implements OnInit {
     const deviceName = event.label;
     this.router.navigate([`${Menu.Device_Management}/${SubMenu.Devices}`, deviceName]);
   }
-
 }

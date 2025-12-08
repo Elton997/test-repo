@@ -150,6 +150,7 @@ export class DeviceListComponent implements OnInit, OnDestroy {
   }
 
   handleRowClick(data: any) {
-    this.router.navigate([Menu.Device_Management + '/' + SubMenu.Devices, data]);
+    const deviceName = data?.name || data;
+    this.router.navigate([Menu.Device_Management + '/' + SubMenu.Devices, deviceName]);
   }
 }

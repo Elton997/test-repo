@@ -1,3 +1,4 @@
+<ng-container *ngIf="rack; else loadingTemplate">
 <div class="rack-details-container">
 <!-- Header Section -->
     <div class="details-header">
@@ -50,12 +51,11 @@
 
                 <div class="rack-views-container">
                     <div class="rack-view-item">
-                        <app-dynamic-rack [units]="42" [occupied]="getOccupied()" [viewType]="'front'" [title]="'Front'"
+                        <app-dynamic-rack [units]="getRackUnits()" [occupied]="getOccupied()" [viewType]="'front'" [title]="'Front'"
                             (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
                     </div>
                     <div class="rack-view-item">
-                        <app-dynamic-rack [units]="42" [occupied]="getOccupied()" [viewType]="'back'" [title]="'Back'"
-                            (deviceClick)="onDeviceClick($event)"></app-dynamic-rack>
+                        <app-dynamic-rack [units]="getRackUnits()" [occupied]="getOccupied()" [viewType]="'back'" [title]="'Back'"></app-dynamic-rack>
                     </div>
                 </div>
             </div>
@@ -63,9 +63,20 @@
     </div>
 
     <!-- Comments Section -->
-    <div class="details-section comments-section" *ngIf="rack.comments">
-        <h2 class="section-title">Comments</h2>
-        <p class="comments-text">{{ rack.comments }}</p>
+    <div class="details-section comments-section">
+        <h2 class="section-title">Description</h2>
+        <p class="comments-text">{{ rack?.description ? rack?.description : 'No description available.' }}</p>
     </div>
 
 </div>
+</ng-container>
+
+<ng-template #loadingTemplate>
+  <div class="rack-details-container">
+    <div class="details-header">
+      <div class="header-content">
+        <h1 class="device-name">Loading rack details...</h1>
+      </div>
+    </div>
+  </div>
+</ng-template>

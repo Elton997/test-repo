@@ -43,4 +43,45 @@ export class ListService {
       return throwError(() => err);
     }
   }
+
+  getDetails(entity: string, name: string) {
+    try {
+      const params = new HttpParams()
+        .set('entity', entity)
+        .set('name', name);
+
+      return this.http.get(`${this.baseUrl}/details`, {
+        params,
+        headers: this.options.headers
+      }).pipe(
+        catchError((error) => {
+          console.error('Error while fetching details:', error);
+          return throwError(() => error);
+        })
+      );
+    } catch (err) {
+      console.error("Client-side error in getDetails(): ", err);
+      return throwError(() => err);
+    }
+  }
+  getDeviceDetails(deviceName: string) {
+    try {
+      const params = new HttpParams()
+        .set('entity', 'devices')
+        .set('name', deviceName);
+
+      return this.http.get(`${this.baseUrl}/details`, {
+        params,
+        headers: this.options.headers
+      }).pipe(
+        catchError((error) => {
+          console.error('Error while fetching device details:', error);
+          return throwError(() => error);
+        })
+      );
+    } catch (err) {
+      console.error("Client-side error in getDeviceDetails(): ", err);
+      return throwError(() => err);
+    }
+  }
 }

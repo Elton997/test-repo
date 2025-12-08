@@ -56,6 +56,46 @@ export class DynamicRackComponent implements OnInit {
   }
 
   /**
+   * Get complete style object for device block based on occupied item
+   */
+  getDeviceBlockStyle(occ: any): any {
+    const style: any = {
+      height: (occ.height * 28) + 'px'
+    };
+    
+    if (!occ.color) {
+      style.background = 'linear-gradient(135deg, #ffcb69 0%, #ffd89b 100%)';
+      style.borderColor = '#ffb84d';
+      return style;
+    }
+    
+    // For gray color, use a gradient for better visual effect with reduced opacity
+    if (occ.color === '#b0b0b0' || occ.color.toLowerCase().includes('grey')) {
+      style.background = `linear-gradient(135deg, ${occ.color} 0%, ${this.darkenColor(occ.color, 10)} 100%)`;
+      style.borderColor = this.darkenColor(occ.color, 20);
+      style.opacity = '0.7';
+      return style;
+    }
+    
+    // For other colors (like green for selected device), use gradient
+    style.background = `linear-gradient(135deg, ${occ.color} 0%, ${this.darkenColor(occ.color, 10)} 100%)`;
+    style.borderColor = this.darkenColor(occ.color, 20);
+    return style;
+  }
+
+  /**
+   * Darken a hex color by a percentage
+   */
+  private darkenColor(color: string, percent: number): string {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.max(0, Math.min(255, (num >> 16) - amt));
+    const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) - amt));
+    const B = Math.max(0, Math.min(255, (num & 0x0000FF) - amt));
+    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+  }
+
+  /**
    * Handle device block click
    */
   onDeviceClick(device: any): void {
