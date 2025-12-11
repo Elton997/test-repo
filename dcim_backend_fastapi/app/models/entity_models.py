@@ -384,6 +384,10 @@ class Model(Base):
     height = Column(Integer, nullable=False)
     description = Column(String(255), nullable=True)
 
+    # Model images
+    front_image_path = Column(String(512), nullable=True)
+    rear_image_path = Column(String(512), nullable=True)
+
     # Relationships
     make = relationship("Make", back_populates="models")
     device_type = relationship("DeviceType", back_populates="models")
@@ -571,10 +575,6 @@ class Device(Base):
         onupdate=datetime.utcnow,
     )
     description = Column(String(255), nullable=True)
-
-    # Device images
-    front_image_path = Column(String(512), nullable=True)
-    rear_image_path = Column(String(512), nullable=True)
 
     # Relationships
     building = relationship("Building", back_populates="devices")

@@ -64,13 +64,13 @@ async def update_entity(
     
     **Required access level:** Editor or Admin
     
-    **For devices with images:**
+    **For models with images:**
     - Use `multipart/form-data` content type
     - Send `data` as a JSON string in a form field
-    - Optional file fields: `front_image`, `rear_image` (legacy `image` handled as `front_image`)
-    - Optional deletion flags: `delete_front_image=true`, `delete_rear_image=true` (legacy `delete_image` for front)
+    - Optional file fields: `front_image`, `rear_image`
+    - Optional deletion flags: `delete_front_image=true`, `delete_rear_image=true`
     
-    **For other entities or devices without images:**
+    **For other entities or models without images:**
     - Use `application/json` content type
     - Send JSON object directly in request body (will be parsed automatically)
     
@@ -132,17 +132,17 @@ async def update_entity(
                 detail=f"Invalid request body. For devices with images, use multipart/form-data with 'data' field. For others, use application/json. Error: {str(e)}",
             )
     
-    # Validate image is only provided for devices
-    if (front_image or rear_image) and entity != ListingType.devices:
+    # Validate image is only provided for models
+    if (front_image or rear_image) and entity != ListingType.models:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Image upload is only supported for devices, not {entity.value}",
+            detail=f"Image upload is only supported for models, not {entity.value}",
         )
     
-    if (delete_front_image or delete_rear_image) and entity != ListingType.devices:
+    if (delete_front_image or delete_rear_image) and entity != ListingType.models:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Image deletion is only supported for devices, not {entity.value}",
+            detail=f"Image deletion is only supported for models, not {entity.value}",
         )
     
     # Get the schema for validation
@@ -173,12 +173,12 @@ async def update_entity(
     # Filter out None values (only update provided fields)
     update_data = {k: v for k, v in validated_data.model_dump().items() if v is not None}
     
-    # Handle images for devices
-    if entity == ListingType.devices:
-        from app.models.entity_models import Device
+    # Handle images for models
+    if entity == ListingType.models:
+        from app.models.entity_models import Model
         from app.helpers.db_utils import get_entity_by_name
 
-        device = get_entity_by_name(db, Device, entity_name)
+        model = get_entity_by_name(db, Model, entity_name)
 
         def _validate_image_ops(upload, delete_flag, label: str) -> None:
             if upload and delete_flag:
@@ -190,12 +190,12 @@ async def update_entity(
         _validate_image_ops(front_image, delete_front_image, "front")
         _validate_image_ops(rear_image, delete_rear_image, "rear")
 
-        if delete_front_image and device.front_image_path:
-            delete_device_image(device.front_image_path)
+        if delete_front_image and model.front_image_path:
+            delete_device_image(model.front_image_path)
             update_data["front_image_path"] = None
         elif front_image:
             try:
-                new_front_path = update_device_image(front_image, entity_name, device.front_image_path)
+                new_front_path = update_device_image(front_image, entity_name, model.front_image_path)
                 update_data["front_image_path"] = new_front_path
             except HTTPException:
                 raise
@@ -205,12 +205,12 @@ async def update_entity(
                     detail=f"Failed to update front image: {str(e)}",
                 )
 
-        if delete_rear_image and device.rear_image_path:
-            delete_device_image(device.rear_image_path)
+        if delete_rear_image and model.rear_image_path:
+            delete_device_image(model.rear_image_path)
             update_data["rear_image_path"] = None
         elif rear_image:
             try:
-                new_rear_path = update_device_image(rear_image, entity_name, device.rear_image_path)
+                new_rear_path = update_device_image(rear_image, entity_name, model.rear_image_path)
                 update_data["rear_image_path"] = new_rear_path
             except HTTPException:
                 raise

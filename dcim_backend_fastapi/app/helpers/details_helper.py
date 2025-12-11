@@ -33,131 +33,6 @@ from app.models.entity_models import (
 # Entity-specific detail functions
 # =============================================================================
 
-def get_location_details(db: Session, entity_name: str) -> Dict[str, Any]:
-    """Get detailed information about a specific location by name.
-    Optimized: Combined query for stats, single query for buildings.
-    """
-    try:
-        location = get_entity_by_name(db, Location, entity_name)
-
-        # Optimize: Get buildings and stats in a single query
-        buildings_query = (
-            db.query(Building)
-            .filter(Building.location_id == location.id)
-        )
-        buildings = buildings_query.all()
-
-        # Optimize: Get stats in a single query with subqueries
-        stats_query = (
-            db.query(
-                func.count(func.distinct(Building.id)).label('total_buildings'),
-                func.count(func.distinct(Rack.id)).label('total_racks'),
-                func.count(func.distinct(Device.id)).label('total_devices')
-            )
-            .outerjoin(Building, Building.location_id == location.id)
-            .outerjoin(Rack, Rack.location_id == location.id)
-            .outerjoin(Device, Device.location_id == location.id)
-        ).first()
-
-        return {
-            "id": location.id,
-            "name": location.name,
-            "description": location.description,
-            "buildings": [
-                {
-                    "id": b.id,
-                    "name": b.name,
-                    "status": b.status,
-                }
-                for b in buildings
-            ],
-            "stats": {
-                "total_buildings": int(stats_query.total_buildings) if stats_query else len(buildings),
-                "total_racks": int(stats_query.total_racks) if stats_query else 0,
-                "total_devices": int(stats_query.total_devices) if stats_query else 0,
-            },
-        }
-    except HTTPException:
-        raise
-    except exc.SQLAlchemyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error in get_location_details: {str(e)}",
-        )
-
-
-def get_building_details(db: Session, entity_name: str) -> Dict[str, Any]:
-    """Get detailed information about a specific building by name.
-    Optimized: Combined query for racks and stats.
-    """
-    try:
-        building = get_entity_by_name(db, Building, entity_name)
-
-        # Optimize: Get location in same query
-        location = (
-            db.query(Location)
-            .filter(Location.id == building.location_id)
-            .first()
-        )
-
-        # Optimize: Get racks and calculate stats in single query
-        racks_query = (
-            db.query(
-                Rack,
-                func.count(Device.id).label('device_count')
-            )
-            .outerjoin(Device, Device.building_id == building.id)
-            .filter(Rack.building_id == building.id)
-            .group_by(Rack.id)
-        )
-        racks_data = racks_query.all()
-
-        racks = [r for r, _ in racks_data]
-        total_devices = sum(dc for _, dc in racks_data)
-
-        # Calculate space stats
-        total_capacity = sum(r.height or 0 for r in racks)
-        used_space = sum(r.space_used or 0 for r in racks)
-        available_space = sum(
-            (r.space_available if r.space_available is not None else max((r.height or 0) - (r.space_used or 0), 0))
-            for r in racks
-        )
-
-        return {
-            "id": building.id,
-            "name": building.name,
-            "status": building.status,
-            "description": building.description,
-            "location": {
-                "id": location.id if location else None,
-                "name": location.name if location else None,
-            },
-            "racks": [
-                {
-                    "id": r.id,
-                    "name": r.name,
-                    "status": r.status,
-                    "height": r.height,
-                }
-                for r in racks
-            ],
-            "stats": {
-                "total_racks": len(racks),
-                "total_devices": total_devices,
-                "total_capacity": total_capacity,
-                "used_space": used_space,
-                "available_space": available_space,
-            },
-        }
-    except HTTPException:
-        raise
-    except exc.SQLAlchemyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error in get_building_details: {str(e)}",
-        )
-
-
 def get_wing_details(db: Session, entity_name: str) -> Dict[str, Any]:
     """Get detailed information about a specific wing by name."""
     wing = (
@@ -387,15 +262,17 @@ def get_rack_details(db: Session, entity_name: str) -> Dict[str, Any]:
         
         rack, location, building, wing, floor, datacenter = rack_data
 
-        # Optimize: Get devices with related info in single query
+        # Optimize: Get devices with related info in single query (including Model for image paths)
         devices_data = (
             db.query(
                 Device,
                 DeviceType,
-                Make
+                Make,
+                Model
             )
             .outerjoin(DeviceType, Device.devicetype_id == DeviceType.id)
             .outerjoin(Make, Device.make_id == Make.id)
+            .outerjoin(Model, Model.device_type_id == DeviceType.id)
             .filter(Device.rack_id == rack.id)
             .order_by(Device.position.asc())
             .all()
@@ -446,8 +323,10 @@ def get_rack_details(db: Session, entity_name: str) -> Dict[str, Any]:
                     "space_required": device.space_required,
                     "device_type": device_type.name if device_type else None,
                     "make": make.name if make else None,
+                    "front_image_path": model.front_image_path if model else None,
+                    "rear_image_path": model.rear_image_path if model else None,
                 }
-                for device, device_type, make in devices_data
+                for device, device_type, make, model in devices_data
             ],
             "stats": {
                 "total_devices": len(devices_data),
@@ -500,17 +379,19 @@ def get_device_details(db: Session, entity_name: str) -> Dict[str, Any]:
         if device.device_type and device.device_type.models:
             primary_model = device.device_type.models[0]
 
-        # Optimize: Get devices in the same rack with related info in single query
+        # Optimize: Get devices in the same rack with related info in single query (including Model for image paths)
         devices_data = []
         if device.rack_id:
             devices_data = (
                 db.query(
                     Device,
                     DeviceType,
-                    Make
+                    Make,
+                    Model
                 )
                 .outerjoin(DeviceType, Device.devicetype_id == DeviceType.id)
                 .outerjoin(Make, Device.make_id == Make.id)
+                .outerjoin(Model, Model.device_type_id == DeviceType.id)
                 .filter(Device.rack_id == device.rack_id)
                 .order_by(Device.position.asc())
                 .all()
@@ -529,8 +410,8 @@ def get_device_details(db: Session, entity_name: str) -> Dict[str, Any]:
             "po_number": device.po_number,
             "asset_user": device.asset_user,
             "description": device.description,
-            "front_image_path": device.front_image_path,
-            "rear_image_path": device.rear_image_path,
+            "front_image_path": primary_model.front_image_path if primary_model else None,
+            "rear_image_path": primary_model.rear_image_path if primary_model else None,
             "created_at": device.created_at,
             "last_updated": device.last_updated,
             "location": {
@@ -590,8 +471,10 @@ def get_device_details(db: Session, entity_name: str) -> Dict[str, Any]:
                     "space_required": d.space_required,
                     "device_type": dt.name if dt else None,
                     "make": make.name if make else None,
+                    "front_image_path": m.front_image_path if m else None,
+                    "rear_image_path": m.rear_image_path if m else None,
                 }
-                for d, dt, make in devices_data
+                for d, dt, make, m in devices_data
             ],
             "warranty": {
                 "start_date": device.warranty_start_date,
@@ -650,8 +533,12 @@ def get_device_type_details(db: Session, entity_name: str) -> Dict[str, Any]:
             "id": primary_model.id if primary_model else None,
             "name": primary_model.name if primary_model else None,
             "height": primary_model.height if primary_model else None,
+            "front_image_path": primary_model.front_image_path if primary_model else None,
+            "rear_image_path": primary_model.rear_image_path if primary_model else None,
         },
         "height": primary_model.height if primary_model else None,
+        "front_image_path": primary_model.front_image_path if primary_model else None,
+        "rear_image_path": primary_model.rear_image_path if primary_model else None,
         "stats": {
             "device_count": device_count,
             "model_count": len(device_type.models),
@@ -798,6 +685,8 @@ def get_model_details(db: Session, entity_name: str) -> Dict[str, Any]:
         "name": model.name,
         "height": model.height,
         "description": model.description,
+        "front_image_path": model.front_image_path,
+        "rear_image_path": model.rear_image_path,
         "make": {
             "id": model.make.id if model.make else None,
             "name": model.make.name if model.make else None,
@@ -854,8 +743,6 @@ def get_application_details(db: Session, entity_name: str) -> Dict[str, Any]:
 # =============================================================================
 
 ENTITY_DETAIL_HANDLERS: Dict[ListingType, Callable[[Session, str], Dict[str, Any]]] = {
-    ListingType.locations: get_location_details,
-    ListingType.buildings: get_building_details,
     ListingType.wings: get_wing_details,
     ListingType.floors: get_floor_details,
     ListingType.datacenters: get_datacenter_details,

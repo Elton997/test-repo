@@ -61,8 +61,6 @@ def _create_table() -> None:
             sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
             sa.Column("last_updated", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
             sa.Column("description", sa.String(255), nullable=True),
-            sa.Column("front_image_path", sa.String(512), nullable=True),
-            sa.Column("rear_image_path", sa.String(512), nullable=True),
             schema=SCHEMA,
         )
 
