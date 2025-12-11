@@ -282,7 +282,6 @@ def create_rack(db: Session, data: Dict[str, Any]) -> Dict[str, Any]:
             floor_id=floor.id,
             datacenter_id=datacenter.id,
             status=data.get("status", "active"),
-            width=data.get("width"),
             height=height,
             space_used=0,
             space_available=height,

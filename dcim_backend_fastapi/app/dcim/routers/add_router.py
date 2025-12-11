@@ -242,7 +242,7 @@ async def add_entity(
     - **locations**: `name`, `description`
     - **buildings**: `name`, `status`, `location_name`, `description`
     - **datacenters**: `name`, `location_name`, `building_name`, `wing_name`, `floor_name`, `description`
-    - **racks**: `name`, `location_name`, `building_name`, `wing_name`, `floor_name`, `datacenter_name`, `status`, `width`, `height`, `description`
+    - **racks**: `name`, `location_name`, `building_name`, `wing_name`, `floor_name`, `datacenter_name`, `status`, `height`, `description`
     - **devices**: `name`, `serial_no`, `position`, `face`, `status`, `devicetype_name`, `location_name`, `building_name`, `rack_name`, `datacenter_name`, `wing_name`, `floor_name`, `make_name`, `model_name`, `ip`, `po_number`, `asset_user`, `asset_owner_name`, `application_name`, `warranty_start_date`, `warranty_end_date`, `amc_start_date`, `amc_end_date`, `description`
     - **device_types**: `name`, `make_name`, `description`
     - **asset_owner**: `name`, `location_name`, `description`

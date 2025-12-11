@@ -182,7 +182,6 @@ class RackOut(BaseModel):
     floor_id: int
     datacenter_id: int
     status: str
-    width: Optional[int] = None
     height: Optional[int] = None
     space_used: int
     space_available: int
@@ -203,7 +202,6 @@ class RackCreate(BaseModel):
     floor_name: str = Field(..., min_length=1, max_length=255, description="Floor name")
     datacenter_name: str = Field(..., min_length=1, max_length=255, description="Datacenter name (data center)")
     status: str = Field(..., min_length=1, max_length=255, description="Rack status")
-    width: int = Field(..., gt=0, description="Rack width")
     height: int = Field(..., gt=0, description="Rack height in U (required)")
     description: str = Field(..., min_length=1, max_length=255, description="Rack description")
 
@@ -217,7 +215,6 @@ class RackUpdate(BaseModel):
     floor_id: Optional[int] = Field(None, gt=0)
     datacenter_id: Optional[int] = Field(None, gt=0)
     status: Optional[str] = Field(None, max_length=255)
-    width: Optional[int] = Field(None, gt=0)
     height: Optional[int] = Field(None, gt=0)
     description: Optional[str] = Field(None, max_length=255)
 

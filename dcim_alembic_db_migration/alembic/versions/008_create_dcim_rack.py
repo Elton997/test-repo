@@ -42,7 +42,6 @@ def _create_table() -> None:
             sa.Column("floor_id", sa.Integer(), sa.ForeignKey("dcim.dcim_floor.id"), nullable=False),
             sa.Column("datacenter_id", sa.Integer(), sa.ForeignKey("dcim.dcim_datacenter.id"), nullable=False),
             sa.Column("status", sa.String(255), nullable=False, server_default=sa.text("'active'")),
-            sa.Column("width", sa.Integer(), nullable=True),
             sa.Column("height", sa.Integer(), nullable=True),
             sa.Column("space_used", sa.Integer(), nullable=False, server_default="0"),
             sa.Column("space_available", sa.Integer(), nullable=False, server_default="0"),
