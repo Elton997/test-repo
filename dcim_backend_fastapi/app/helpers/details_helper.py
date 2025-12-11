@@ -287,7 +287,6 @@ def get_rack_details(db: Session, entity_name: str) -> Dict[str, Any]:
             "id": rack.id,
             "name": rack.name,
             "status": rack.status,
-            "width": rack.width,
             "height": rack.height,
             "description": rack.description,
             "created_at": rack.created_at,

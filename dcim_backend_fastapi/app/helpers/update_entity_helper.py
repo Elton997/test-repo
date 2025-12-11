@@ -269,7 +269,7 @@ def update_rack(db: Session, entity_name: str, data: Dict[str, Any]) -> Dict[str
         rack.datacenter_id = datacenter.id
     
     # Update other fields
-    updatable_fields = ["status", "width", "description"]
+    updatable_fields = ["status", "description"]
     for field in updatable_fields:
         if field in data:
             setattr(rack, field, data[field])
@@ -305,7 +305,6 @@ def update_rack(db: Session, entity_name: str, data: Dict[str, Any]) -> Dict[str
         "building_id": rack.building_id,
         "location_id": rack.location_id,
         "status": rack.status,
-        "width": rack.width,
         "height": rack.height,
         "space_used": rack.space_used,
         "space_available": rack.space_available,

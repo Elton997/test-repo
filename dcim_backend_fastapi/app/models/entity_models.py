@@ -303,7 +303,6 @@ class Rack(Base):
         index=True,
     )
     status = Column(String(255), nullable=False, default="active")
-    width = Column(Integer, nullable=True)
     height = Column(Integer, nullable=True)
     space_used = Column(Integer, nullable=False, default=0)
     space_available = Column(Integer, nullable=False, default=0)

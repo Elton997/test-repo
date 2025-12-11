@@ -78,7 +78,7 @@ async def update_entity(
     
     - **locations**: `name`
     - **buildings**: `name`, `status`, `location_name`
-    - **racks**: `name`, `building_name`, `location_name`, `status`, `width`, `height`
+    - **racks**: `name`, `building_name`, `location_name`, `status`, `height`
     - **devices**: All device fields (device_name, serial_no, position, face or face_front/face_rear, status, etc.)
     - **device_types**: `device_name`, `make_name`, `model_name`
     - **asset_owner**: `owner_name`, `location_name`

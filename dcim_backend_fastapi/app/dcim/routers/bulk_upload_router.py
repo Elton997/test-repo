@@ -136,8 +136,6 @@ CSV_COLUMN_MAPPING = {
     # Rack-specific mappings
     "rack name": "name",
     "rack_name": "name",
-    "width": "width",
-    "rack width": "width",
     "height": "height",
     "rack height": "height",
     # Device type mappings
@@ -167,7 +165,7 @@ CSV_COLUMN_MAPPING = {
 }
 
 # Integer fields that need type conversion
-INT_FIELDS = {"position", "width", "height", "space_required"}
+INT_FIELDS = {"position", "height", "space_required"}
 
 # Date fields that need string format
 DATE_FIELDS = {"warranty_start_date", "warranty_end_date", "amc_start_date", "amc_end_date"}

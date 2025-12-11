@@ -54,7 +54,6 @@ Template for bulk uploading rack entities.
 - `floor_name` - Floor name (must exist)
 - `datacenter_name` - Datacenter name (must exist)
 - `status` - Rack status (e.g., `active`, `inactive`, `maintenance`)
-- `width` - Rack width in mm (integer > 0, typically 600 or 800)
 - `height` - Rack height in U (integer > 0, typically 42, 45, 48)
 - `description` - Rack description
 

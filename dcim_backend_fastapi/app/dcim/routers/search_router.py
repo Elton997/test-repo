@@ -142,7 +142,6 @@ def _search_racks(
         func.upper(Rack.description).contains(search_upper),
         func.upper(func.to_char(Rack.id)).contains(search_upper),
         func.upper(func.to_char(Rack.height)).contains(search_upper),
-        func.upper(func.to_char(Rack.width)).contains(search_upper),
         func.upper(func.to_char(Rack.space_used)).contains(search_upper),
         func.upper(func.to_char(Rack.space_available)).contains(search_upper),
         func.upper(Location.name).contains(search_upper),
@@ -153,7 +152,6 @@ def _search_racks(
         conditions.extend([
             Rack.id == search_id,
             Rack.height == search_id,
-            Rack.width == search_id,
             Rack.space_used == search_id,
             Rack.space_available == search_id,
         ])
@@ -569,7 +567,7 @@ def global_search(
     Entity types searched:
     - **locations**: All fields including ID
     - **buildings**: All fields including status, location names
-    - **racks**: All fields including height, width, space used/available, related location/building names
+    - **racks**: All fields including height, space used/available, related location/building names
     - **devices**: All fields including serial number, IP, PO number, position, status, asset_user, and related entity names (location, building, rack, make, device_type, application, asset_owner)
     - **device_types**: All fields including related make names
     - **makes**: All fields
