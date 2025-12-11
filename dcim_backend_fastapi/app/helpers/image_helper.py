@@ -1,7 +1,8 @@
 # app/helpers/image_helper.py
 """
-Helper functions for handling device images.
-Handles saving, updating, and deleting device images.
+Helper functions for handling model images.
+Handles saving, updating, and deleting model images (front and rear).
+Images are associated with models, not individual devices.
 """
 import os
 import uuid
@@ -13,20 +14,20 @@ from app.core.config import get_settings
 
 
 def get_device_image_storage_path() -> Path:
-    """Get the base path for storing device images."""
+    """Get the base path for storing model images."""
     settings = get_settings()
     storage_path = Path(settings.DEVICE_IMAGE_STORAGE_PATH)
     storage_path.mkdir(parents=True, exist_ok=True)
     return storage_path
 
 
-def save_device_image(image_file: UploadFile, device_name: str) -> str:
+def save_device_image(image_file: UploadFile, model_name: str) -> str:
     """
-    Save a device image file and return the relative path.
+    Save a model image file and return the relative path.
     
     Args:
         image_file: The uploaded image file
-        device_name: The device name (used for generating filename)
+        model_name: The model name (used for generating filename)
         
     Returns:
         The relative path to the saved image
@@ -45,10 +46,10 @@ def save_device_image(image_file: UploadFile, device_name: str) -> str:
         )
     
     # Generate unique filename
-    # Sanitize device name for filename
-    safe_device_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in device_name)
+    # Sanitize model name for filename
+    safe_model_name = "".join(c if c.isalnum() or c in ('-', '_') else '_' for c in model_name)
     unique_id = str(uuid.uuid4())[:8]
-    filename = f"{safe_device_name}_{unique_id}{file_extension}"
+    filename = f"{safe_model_name}_{unique_id}{file_extension}"
     
     # Get storage path
     storage_path = get_device_image_storage_path()
@@ -88,7 +89,7 @@ def save_device_image(image_file: UploadFile, device_name: str) -> str:
 
 def delete_device_image(image_path: Optional[str]) -> None:
     """
-    Delete a device image file.
+    Delete a model image file.
     
     Args:
         image_path: The path to the image file to delete
@@ -108,16 +109,16 @@ def delete_device_image(image_path: Optional[str]) -> None:
 
 def update_device_image(
     image_file: Optional[UploadFile],
-    device_name: str,
+    model_name: str,
     existing_image_path: Optional[str] = None,
 ) -> Optional[str]:
     """
-    Update a device image. If new image is provided, saves it and deletes old one.
+    Update a model image. If new image is provided, saves it and deletes old one.
     If image_file is None, returns existing path.
     
     Args:
         image_file: The new uploaded image file (optional)
-        device_name: The device name
+        model_name: The model name
         existing_image_path: The current image path (will be deleted if new image is provided)
         
     Returns:
@@ -131,5 +132,5 @@ def update_device_image(
         delete_device_image(existing_image_path)
     
     # Save new image
-    return save_device_image(image_file, device_name)
+    return save_device_image(image_file, model_name)
 

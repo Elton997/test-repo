@@ -8,7 +8,7 @@ Optimized for performance with combined queries and eager loading.
 from datetime import date
 from typing import Any, Dict, List, Optional, Set, Tuple, Callable
 
-from sqlalchemy import func, exc
+from sqlalchemy import func, exc, and_
 from sqlalchemy.orm import Session, Query as SQLQuery, joinedload, selectinload
 
 from app.models.entity_models import (
@@ -569,10 +569,17 @@ def list_devices(
         else:
             base_q = base_q.outerjoin(DeviceType, Device.devicetype_id == DeviceType.id)
             
+        # Join Model by matching both device_type_id AND make_id to get the correct model
         if use_inner_join_model:
-            base_q = base_q.join(Model, DeviceType.id == Model.device_type_id)
+            base_q = base_q.join(Model, and_(
+                DeviceType.id == Model.device_type_id,
+                Device.make_id == Model.make_id
+            ))
         else:
-            base_q = base_q.outerjoin(Model, DeviceType.id == Model.device_type_id)
+            base_q = base_q.outerjoin(Model, and_(
+                DeviceType.id == Model.device_type_id,
+                Device.make_id == Model.make_id
+            ))
             
         if use_inner_join_application:
             base_q = base_q.join(ApplicationMapped, Device.applications_mapped_id == ApplicationMapped.id)
@@ -685,6 +692,8 @@ def list_devices(
                 "amc_start_date": device.amc_start_date,
                 "amc_end_date": device.amc_end_date,
                 "serial_number": device.serial_no,
+                "front_image_path": model.front_image_path if model else None,
+                "rear_image_path": model.rear_image_path if model else None,
             })
 
         return total, data
@@ -937,6 +946,8 @@ def list_models(
                 # "device_type_id": device_type.id if device_type else None,
                 "device_type": device_type.name if device_type else None,
                 "height": model.height,
+                "front_image_path": model.front_image_path,
+                "rear_image_path": model.rear_image_path,
             }
             for model, make, device_type in rows
         ]
@@ -1060,6 +1071,342 @@ def list_datacenters(
         raise Exception(f"Database error in list_datacenters: {str(e)}")
 
 
+def list_wings(
+    db: Session,
+    offset: int,
+    page_size: int,
+    location_name: Optional[str] = None,
+    building_name: Optional[str] = None,
+    wing_name: Optional[str] = None,
+    wing_description: Optional[str] = None,
+    allowed_location_ids: Optional[Set[int]] = None,
+    **kwargs,
+) -> Tuple[int, List[Dict[str, Any]]]:
+    """
+    List wings with floor/datacenter counts.
+    """
+    try:
+        # Subquery for floor counts
+        floor_counts_subq = (
+            db.query(
+                Floor.wing_id,
+                func.count(Floor.id).label('floor_count')
+            )
+            .group_by(Floor.wing_id)
+            .subquery()
+        )
+        # Subquery for datacenter counts
+        datacenter_counts_subq = (
+            db.query(
+                Datacenter.wing_id,
+                func.count(Datacenter.id).label('datacenter_count')
+            )
+            .group_by(Datacenter.wing_id)
+            .subquery()
+        )
+        
+        base_q = (
+            db.query(
+                Wing,
+                Location,
+                Building,
+                func.coalesce(floor_counts_subq.c.floor_count, 0).label('floor_count'),
+                func.coalesce(datacenter_counts_subq.c.datacenter_count, 0).label('datacenter_count')
+            )
+            .join(Location, Wing.location_id == Location.id)
+            .join(Building, Wing.building_id == Building.id)
+            .outerjoin(floor_counts_subq, Wing.id == floor_counts_subq.c.wing_id)
+            .outerjoin(datacenter_counts_subq, Wing.id == datacenter_counts_subq.c.wing_id)
+            .order_by(Wing.id.asc())
+        )
+        base_q = _restrict_to_locations(base_q, Wing.location_id, allowed_location_ids)
+        
+        # Apply filters dynamically
+        filter_config = {
+            'location_name': (Location.name, 'exact'),
+            'building_name': (Building.name, 'exact'),
+            'wing_name': (Wing.name, 'exact'),
+            'wing_description': (Wing.description, 'contains'),
+        }
+        filters = {
+            'location_name': location_name,
+            'building_name': building_name,
+            'wing_name': wing_name,
+            'wing_description': wing_description,
+        }
+        base_q = apply_filters(base_q, filters, filter_config)
+        
+        # Use optimized pagination that gets count and data in single query
+        total, rows = get_paginated_results(base_q, offset, page_size, Wing.id)
+
+        data = [
+            {
+                "id": wing.id,
+                "name": wing.name,
+                "description": wing.description,
+                "location_name": location.name if location else None,
+                "building_name": building.name if building else None,
+                "floors": int(floor_count),
+                "datacenters": int(datacenter_count),
+            }
+            for wing, location, building, floor_count, datacenter_count in rows
+        ]
+
+        return total, data
+    except exc.SQLAlchemyError as e:
+        raise Exception(f"Database error in list_wings: {str(e)}")
+
+
+def list_asset_owners(
+    db: Session,
+    offset: int,
+    page_size: int,
+    asset_owner_name: Optional[str] = None,
+    asset_owner_description: Optional[str] = None,
+    location_name: Optional[str] = None,
+    application_name: Optional[str] = None,
+    allowed_location_ids: Optional[Set[int]] = None,
+    **kwargs,
+) -> Tuple[int, List[Dict[str, Any]]]:
+    """
+    List asset owners with application counts.
+    Returns: (total_count, list of asset owner dicts)
+    """
+    try:
+        # Subquery for application counts
+        app_counts_subq = (
+            db.query(
+                ApplicationMapped.asset_owner_id,
+                func.count(ApplicationMapped.id).label('app_count')
+            )
+            .group_by(ApplicationMapped.asset_owner_id)
+            .subquery()
+        )
+        
+        base_q = (
+            db.query(
+                AssetOwner,
+                Location,
+                func.coalesce(app_counts_subq.c.app_count, 0).label('app_count')
+            )
+            .outerjoin(Location, AssetOwner.location_id == Location.id)
+            .outerjoin(app_counts_subq, AssetOwner.id == app_counts_subq.c.asset_owner_id)
+            .order_by(AssetOwner.id.asc())
+        )
+        base_q = _restrict_to_locations(base_q, AssetOwner.location_id, allowed_location_ids)
+        
+        # Apply filters dynamically
+        filter_config = {
+            'asset_owner_name': (AssetOwner.name, 'exact'),
+            'asset_owner_description': (AssetOwner.description, 'contains'),
+            'location_name': (Location.name, 'exact'),
+        }
+        filters = {
+            'asset_owner_name': asset_owner_name,
+            'asset_owner_description': asset_owner_description,
+            'location_name': location_name,
+        }
+        base_q = apply_filters(base_q, filters, filter_config)
+        
+        if application_name and application_name.strip():
+            base_q = (
+                base_q.join(ApplicationMapped, AssetOwner.id == ApplicationMapped.asset_owner_id)
+                .filter(func.upper(ApplicationMapped.name) == func.upper(application_name))
+                .distinct()
+            )
+        
+        # Use optimized pagination that gets count and data in single query
+        total, rows = get_paginated_results(base_q, offset, page_size, AssetOwner.id)
+
+        data = [
+            {
+                "id": asset_owner.id,
+                "name": asset_owner.name,
+                "description": asset_owner.description,
+                "location_name": location.name if location else None,
+                "applications": int(app_count),
+            }
+            for asset_owner, location, app_count in rows
+        ]
+
+        return total, data
+    except exc.SQLAlchemyError as e:
+        raise Exception(f"Database error in list_asset_owners: {str(e)}")
+
+
+def list_applications(
+    db: Session,
+    offset: int,
+    page_size: int,
+    application_name: Optional[str] = None,
+    application_description: Optional[str] = None,
+    asset_owner_name: Optional[str] = None,
+    device_name: Optional[str] = None,
+    allowed_location_ids: Optional[Set[int]] = None,
+    **kwargs,
+) -> Tuple[int, List[Dict[str, Any]]]:
+    """
+    List applications with device counts.
+    Returns: (total_count, list of application dicts)
+    """
+    try:
+        # Subquery for device counts
+        device_counts_subq = (
+            db.query(
+                Device.applications_mapped_id,
+                func.count(Device.id).label('device_count')
+            )
+            .group_by(Device.applications_mapped_id)
+            .subquery()
+        )
+        
+        base_q = (
+            db.query(
+                ApplicationMapped,
+                AssetOwner,
+                func.coalesce(device_counts_subq.c.device_count, 0).label('device_count')
+            )
+            .outerjoin(AssetOwner, ApplicationMapped.asset_owner_id == AssetOwner.id)
+            .outerjoin(device_counts_subq, ApplicationMapped.id == device_counts_subq.c.applications_mapped_id)
+            .order_by(ApplicationMapped.id.asc())
+        )
+        
+        # Apply location restriction via asset_owner -> location
+        if allowed_location_ids is not None:
+            base_q = base_q.filter(AssetOwner.location_id.in_(allowed_location_ids))
+        
+        # Apply filters dynamically
+        filter_config = {
+            'application_name': (ApplicationMapped.name, 'exact'),
+            'application_description': (ApplicationMapped.description, 'contains'),
+            'asset_owner_name': (AssetOwner.name, 'exact'),
+        }
+        filters = {
+            'application_name': application_name,
+            'application_description': application_description,
+            'asset_owner_name': asset_owner_name,
+        }
+        base_q = apply_filters(base_q, filters, filter_config)
+        
+        if device_name and device_name.strip():
+            base_q = (
+                base_q.join(Device, ApplicationMapped.id == Device.applications_mapped_id)
+                .filter(func.upper(Device.name) == func.upper(device_name))
+                .distinct()
+            )
+        
+        # Use optimized pagination that gets count and data in single query
+        total, rows = get_paginated_results(base_q, offset, page_size, ApplicationMapped.id)
+
+        data = [
+            {
+                "id": application.id,
+                "name": application.name,
+                "description": application.description,
+                "asset_owner_name": asset_owner.name if asset_owner else None,
+                "devices": int(device_count),
+            }
+            for application, asset_owner, device_count in rows
+        ]
+
+        return total, data
+    except exc.SQLAlchemyError as e:
+        raise Exception(f"Database error in list_applications: {str(e)}")
+
+
+def list_floors(
+    db: Session,
+    offset: int,
+    page_size: int,
+    location_name: Optional[str] = None,
+    building_name: Optional[str] = None,
+    wing_name: Optional[str] = None,
+    floor_name: Optional[str] = None,
+    floor_description: Optional[str] = None,
+    allowed_location_ids: Optional[Set[int]] = None,
+    **kwargs,
+) -> Tuple[int, List[Dict[str, Any]]]:
+    """
+    List floors with datacenter/rack counts.
+    """
+    try:
+        # Subquery for datacenter counts
+        datacenter_counts_subq = (
+            db.query(
+                Datacenter.floor_id,
+                func.count(Datacenter.id).label('datacenter_count')
+            )
+            .group_by(Datacenter.floor_id)
+            .subquery()
+        )
+        # Subquery for rack counts (racks linked via datacenter)
+        rack_counts_subq = (
+            db.query(
+                Datacenter.floor_id,
+                func.count(Rack.id).label('rack_count')
+            )
+            .join(Rack, Datacenter.id == Rack.datacenter_id)
+            .group_by(Datacenter.floor_id)
+            .subquery()
+        )
+        
+        base_q = (
+            db.query(
+                Floor,
+                Location,
+                Building,
+                Wing,
+                func.coalesce(datacenter_counts_subq.c.datacenter_count, 0).label('datacenter_count'),
+                func.coalesce(rack_counts_subq.c.rack_count, 0).label('rack_count')
+            )
+            .join(Location, Floor.location_id == Location.id)
+            .join(Building, Floor.building_id == Building.id)
+            .join(Wing, Floor.wing_id == Wing.id)
+            .outerjoin(datacenter_counts_subq, Floor.id == datacenter_counts_subq.c.floor_id)
+            .outerjoin(rack_counts_subq, Floor.id == rack_counts_subq.c.floor_id)
+            .order_by(Floor.id.asc())
+        )
+        base_q = _restrict_to_locations(base_q, Floor.location_id, allowed_location_ids)
+        
+        # Apply filters dynamically
+        filter_config = {
+            'location_name': (Location.name, 'exact'),
+            'building_name': (Building.name, 'exact'),
+            'wing_name': (Wing.name, 'exact'),
+            'floor_name': (Floor.name, 'exact'),
+            'floor_description': (Floor.description, 'contains'),
+        }
+        filters = {
+            'location_name': location_name,
+            'building_name': building_name,
+            'wing_name': wing_name,
+            'floor_name': floor_name,
+            'floor_description': floor_description,
+        }
+        base_q = apply_filters(base_q, filters, filter_config)
+        
+        # Use optimized pagination that gets count and data in single query
+        total, rows = get_paginated_results(base_q, offset, page_size, Floor.id)
+
+        data = [
+            {
+                "id": floor.id,
+                "name": floor.name,
+                "description": floor.description,
+                "location_name": location.name if location else None,
+                "building_name": building.name if building else None,
+                "wing_name": wing.name if wing else None,
+                "datacenters": int(datacenter_count),
+                "racks": int(rack_count),
+            }
+            for floor, location, building, wing, datacenter_count, rack_count in rows
+        ]
+
+        return total, data
+    except exc.SQLAlchemyError as e:
+        raise Exception(f"Database error in list_floors: {str(e)}")
+
+
 # =============================================================================
 # Entity handler mapping
 # =============================================================================
@@ -1067,10 +1414,14 @@ def list_datacenters(
 ENTITY_LIST_HANDLERS: Dict[ListingType, Callable[..., Tuple[int, List[Dict[str, Any]]]]] = {
     ListingType.locations: list_locations,
     ListingType.buildings: list_buildings,
+    ListingType.wings: list_wings,
+    ListingType.floors: list_floors,
     ListingType.racks: list_racks,
     ListingType.devices: list_devices,
     ListingType.device_types: list_device_types,
     ListingType.makes: list_makes,
     ListingType.models: list_models,
     ListingType.datacenters: list_datacenters,
+    ListingType.asset_owner: list_asset_owners,
+    ListingType.applications: list_applications,
 }

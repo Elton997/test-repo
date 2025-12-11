@@ -75,7 +75,7 @@ def list_dcim_entities(
         ...,
         description=(
             "What to list: locations | buildings | racks | devices | "
-            "device_types | makes | models | datacenters"
+            "device_types | makes | models | datacenters | asset_owner | applications"
         ),
     ),
     offset: int = Query(0, ge=0, description="Offset for pagination (0-based)"),
@@ -89,8 +89,10 @@ def list_dcim_entities(
     building_description: Optional[str] = Query(None, description="Filter by building description"),
     # Wing filters
     wing_name: Optional[str] = Query(None, description="Filter by wing name"),
+    wing_description: Optional[str] = Query(None, description="Filter by wing description"),
     # Floor filters
     floor_name: Optional[str] = Query(None, description="Filter by floor name"),
+    floor_description: Optional[str] = Query(None, description="Filter by floor description"),
     # Rack filters
     rack_name: Optional[str] = Query(None, description="Filter by rack name"),
     rack_status: Optional[str] = Query(None, description="Filter by rack status"),
@@ -125,6 +127,12 @@ def list_dcim_entities(
     # Datacenter filters
     datacenter_name: Optional[str] = Query(None, description="Filter by datacenter name"),
     datacenter_description: Optional[str] = Query(None, description="Filter by datacenter description"),
+    # Asset owner filters
+    asset_owner_name: Optional[str] = Query(None, description="Filter by asset owner name"),
+    asset_owner_description: Optional[str] = Query(None, description="Filter by asset owner description"),
+    # Application filters
+    application_name: Optional[str] = Query(None, description="Filter by application name"),
+    application_description: Optional[str] = Query(None, description="Filter by application description"),
     access_level: AccessLevel = Depends(require_at_least_viewer),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
@@ -164,7 +172,10 @@ def list_dcim_entities(
       instances (devices total)
     
     **asset_owner**:
-    - id, name (owner name), location (name)
+    - id, name (owner name), location (name), description, applications (count)
+    
+    **applications**:
+    - id, name (application name), asset_owner (name), description, devices (count)
     
     **makes**:
     - id, name, racks (total), devices (total), models (model types total), description
@@ -198,7 +209,9 @@ def list_dcim_entities(
         'building_status': _normalize_empty_to_none(building_status),
         'building_description': _normalize_empty_to_none(building_description),
         'wing_name': _normalize_empty_to_none(wing_name),
+        'wing_description': _normalize_empty_to_none(wing_description),
         'floor_name': _normalize_empty_to_none(floor_name),
+        'floor_description': _normalize_empty_to_none(floor_description),
         'rack_name': _normalize_empty_to_none(rack_name),
         'rack_status': _normalize_empty_to_none(rack_status),
         'rack_height': rack_height_parsed,
@@ -227,6 +240,10 @@ def list_dcim_entities(
         'model_height': model_height_parsed,
         'datacenter_name': _normalize_empty_to_none(datacenter_name),
         'datacenter_description': _normalize_empty_to_none(datacenter_description),
+        'asset_owner_name': _normalize_empty_to_none(asset_owner_name),
+        'asset_owner_description': _normalize_empty_to_none(asset_owner_description),
+        'application_name': _normalize_empty_to_none(application_name),
+        'application_description': _normalize_empty_to_none(application_description),
     }
     
     # Build cache key with all parameters

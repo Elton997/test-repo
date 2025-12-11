@@ -372,13 +372,21 @@ def update_device(db: Session, entity_name: str, data: Dict[str, Any]) -> Dict[s
             application = get_entity_by_name(db, ApplicationMapped, data["application_name"])
             device.applications_mapped_id = application.id
     
+        # Handle face value from frontend (Front/Rear) - case insensitive
         face_value = data.pop("face", None)
         if face_value:
-            face_value_lower = face_value.lower()
-            data["face_front"] = face_value_lower in {"front", "both"}
-            data["face_rear"] = face_value_lower in {"rear", "both"}
+            # Convert face value to face_front and face_rear booleans
+            # - face=Front -> face_front=True, face_rear=True
+            # - face=Rear -> face_front=False, face_rear=True
+            if face_value.lower() == "front":
+                data["face_front"] = True
+                data["face_rear"] = True
+            elif face_value.lower() == "rear":
+                data["face_front"] = False
+                data["face_rear"] = True
 
         # Update other fields
+        # Note: front_image_path and rear_image_path are now on Model, not Device
         updatable_fields = [
             "name",
             "serial_no",
@@ -395,8 +403,6 @@ def update_device(db: Session, entity_name: str, data: Dict[str, Any]) -> Dict[s
             "amc_end_date",
             "space_required",
             "description",
-            "front_image_path",
-            "rear_image_path",
         ]
         
         # Determine new/effective space requirements before mutating rack capacity
@@ -464,8 +470,6 @@ def update_device(db: Session, entity_name: str, data: Dict[str, Any]) -> Dict[s
             "status": device.status,
             "building_id": device.building_id,
             "rack_id": device.rack_id,
-            "front_image_path": device.front_image_path,
-            "rear_image_path": device.rear_image_path,
             "last_updated": device.last_updated,
         }
 
@@ -624,6 +628,12 @@ def update_model(db: Session, entity_name: str, data: Dict[str, Any]) -> Dict[st
     if "description" in data:
         model.description = data["description"]
     
+    # Handle image paths
+    if "front_image_path" in data:
+        model.front_image_path = data["front_image_path"]
+    if "rear_image_path" in data:
+        model.rear_image_path = data["rear_image_path"]
+    
     db.commit()
     db.refresh(model)
     
@@ -633,6 +643,8 @@ def update_model(db: Session, entity_name: str, data: Dict[str, Any]) -> Dict[st
         "make_id": model.make_id,
         "device_type_id": model.device_type_id,
         "height": model.height,
+        "front_image_path": model.front_image_path,
+        "rear_image_path": model.rear_image_path,
     }
 
 

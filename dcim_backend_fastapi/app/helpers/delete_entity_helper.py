@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.helpers.listing_types import ListingType
 from app.helpers.db_utils import get_entity_by_name, db_operation
 from app.helpers.rack_capacity_helper import release_rack_capacity
+from app.helpers.image_helper import delete_device_image
 from app.models.entity_models import (
     Rack,
     Device,
@@ -132,7 +133,11 @@ def delete_rack(db: Session, entity_name: str) -> Dict[str, Any]:
 
 
 def delete_device(db: Session, entity_name: str) -> Dict[str, Any]:
-    """Delete a device by name with proper exception handling."""
+    """Delete a device by name with proper exception handling.
+    
+    Note: Device images are now stored on the Model entity, not on Device.
+    Image cleanup happens when the Model is deleted, not the Device.
+    """
     with db_operation(db, "delete device"):
         device = get_entity_by_name(db, Device, entity_name)
         
@@ -146,16 +151,7 @@ def delete_device(db: Session, entity_name: str) -> Dict[str, Any]:
             "status": device.status,
             "building_id": device.building_id,
             "rack_id": device.rack_id,
-            "front_image_path": device.front_image_path,
-            "rear_image_path": device.rear_image_path,
         }
-        
-        # Delete associated image files if they exist
-        from app.helpers.image_helper import delete_device_image
-        if device.front_image_path:
-            delete_device_image(device.front_image_path)
-        if device.rear_image_path:
-            delete_device_image(device.rear_image_path)
         
         if device.rack:
             used_space = device.space_required if device.space_required and device.space_required > 0 else 1
@@ -230,7 +226,7 @@ def delete_make(db: Session, entity_name: str) -> Dict[str, Any]:
 
 
 def delete_model(db: Session, entity_name: str) -> Dict[str, Any]:
-    """Delete a model by name."""
+    """Delete a model by name and its associated images."""
     model = db.query(Model).filter(func.upper(Model.name) == func.upper(entity_name)).first()
     if not model:
         raise HTTPException(
@@ -243,6 +239,12 @@ def delete_model(db: Session, entity_name: str) -> Dict[str, Any]:
         "name": model.name,
         "make_id": model.make_id,
     }
+    
+    # Delete associated images if they exist
+    if model.front_image_path:
+        delete_device_image(model.front_image_path)
+    if model.rear_image_path:
+        delete_device_image(model.rear_image_path)
     
     db.delete(model)
     db.commit()

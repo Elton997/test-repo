@@ -40,6 +40,8 @@ def _create_table() -> None:
             sa.Column("device_type_id", sa.Integer(), sa.ForeignKey("dcim.dcim_device_type.id", ondelete="CASCADE"), nullable=False),
             sa.Column("height", sa.Integer(), nullable=False),
             sa.Column("description", sa.String(255), nullable=True),
+            sa.Column("front_image_path", sa.String(512), nullable=True),
+            sa.Column("rear_image_path", sa.String(512), nullable=True),
             schema=SCHEMA,
         )
 

@@ -386,30 +386,22 @@ def create_device(db: Session, data: Dict[str, Any]) -> Dict[str, Any]:
     # Also check overall rack capacity (for informational purposes)
     ensure_rack_capacity(rack, space_required)
     
+    # Handle face value from frontend (Front/Rear) - case insensitive
     face_value = data.pop("face", None)
-    face_front = data.get("face_front")
-    face_rear = data.get("face_rear")
-
-    def _face_bool(value: Optional[str]) -> tuple[bool, bool]:
-        if not value:
-            return False, False
-        value = value.lower()
-        if value == "front":
-            return True, False
-        if value == "rear":
-            return False, True
-        if value == "both":
-            return True, True
-        # default fallback
-        return True, True
-
-    if face_value:
-        face_front, face_rear = _face_bool(face_value)
-
-    if face_front is None:
+    
+    # Convert face value to face_front and face_rear booleans
+    # - face=Front -> face_front=True, face_rear=True
+    # - face=Rear -> face_front=False, face_rear=True
+    if face_value and face_value.lower() == "front":
         face_front = True
-    if face_rear is None:
-        face_rear = face_front  # default behavior keeps rear true for front placements
+        face_rear = True
+    elif face_value and face_value.lower() == "rear":
+        face_front = False
+        face_rear = True
+    else:
+        # Default to front if no face value provided
+        face_front = True
+        face_rear = True
 
     device = Device(
         name=data["name"],
@@ -436,8 +428,6 @@ def create_device(db: Session, data: Dict[str, Any]) -> Dict[str, Any]:
         amc_end_date=data.get("amc_end_date"),
         space_required=space_required,
         description=data.get("description"),
-        front_image_path=data.get("front_image_path"),
-        rear_image_path=data.get("rear_image_path"),
     )
     db.add(device)
     reserve_rack_capacity(rack, space_required)
@@ -458,8 +448,6 @@ def create_device(db: Session, data: Dict[str, Any]) -> Dict[str, Any]:
         "model_name": model.name,
         "asset_owner_name": asset_owner.name,
         "created_at": device.created_at,
-        "front_image_path": device.front_image_path,
-        "rear_image_path": device.rear_image_path,
     }
 
 
@@ -562,6 +550,8 @@ def create_model(db: Session, data: Dict[str, Any]) -> Dict[str, Any]:
             device_type_id=device_type.id,
             height=data["height"],
             description=data.get("description"),
+            front_image_path=data.get("front_image_path"),
+            rear_image_path=data.get("rear_image_path"),
         )
         db.add(model)
         db.commit()
@@ -575,6 +565,8 @@ def create_model(db: Session, data: Dict[str, Any]) -> Dict[str, Any]:
             "device_type_id": model.device_type_id,
             "device_type_name": device_type.name,
             "height": model.height,
+            "front_image_path": model.front_image_path,
+            "rear_image_path": model.rear_image_path,
         }
 
 

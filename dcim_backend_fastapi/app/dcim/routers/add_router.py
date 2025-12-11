@@ -228,12 +228,12 @@ async def add_entity(
     
     **Note:** All foreign key references use names instead of IDs for easier API usage.
     
-    **For devices with images:**
+    **For models with images:**
     - Use `multipart/form-data` content type
     - Send `data` as a JSON string in a form field
-    - Optional file fields: `front_image` and/or `rear_image` (legacy `image` maps to `front_image`)
+    - Optional file fields: `front_image` and/or `rear_image`
     
-    **For other entities or devices without images:**
+    **For other entities or models without images:**
     - Use `application/json` content type  
     - Send JSON object directly in request body (will be parsed automatically)
     
@@ -311,11 +311,11 @@ async def add_entity(
                 detail=f"Invalid request body. For devices with images, use multipart/form-data with 'data' field. For others, use application/json. Error: {str(e)}",
             )
     
-    # Validate image is only provided for devices
-    if (front_image_file or rear_image_file) and entity != ListingType.devices:
+    # Validate image is only provided for models
+    if (front_image_file or rear_image_file) and entity != ListingType.models:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Image upload is only supported for devices, not {entity.value}",
+            detail=f"Image upload is only supported for models, not {entity.value}",
         )
     
     # Prevent creating wings and floors through this endpoint (use bulk upload instead)
@@ -348,16 +348,16 @@ async def add_entity(
     # Check for complete row uniqueness (for entities without unique name constraints)
     check_row_uniqueness(entity, validated_data.model_dump(), db)
     
-    # Handle image upload for devices
+    # Handle image upload for models
     front_image_path = None
     rear_image_path = None
-    if entity == ListingType.devices:
-        device_name_for_image = (data_dict or {}).get("name", "device")
+    if entity == ListingType.models:
+        model_name_for_image = (data_dict or {}).get("name", "model")
 
         def _save_image(upload_file):
             filename = getattr(upload_file, "filename", None)
             if upload_file and filename:
-                return save_device_image(upload_file, device_name_for_image)
+                return save_device_image(upload_file, model_name_for_image)
             return None
 
         try:
@@ -368,7 +368,7 @@ async def add_entity(
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to save device image: {str(e)}",
+                detail=f"Failed to save model image: {str(e)}",
             )
     
     # Get the handler
@@ -379,9 +379,9 @@ async def add_entity(
             detail=f"Unsupported entity type: {entity}",
         )
     
-    # Add image_path to data for devices
+    # Add image_path to data for models
     create_data = validated_data.model_dump()
-    if entity == ListingType.devices:
+    if entity == ListingType.models:
         if front_image_path:
             create_data["front_image_path"] = front_image_path
         if rear_image_path:
@@ -413,8 +413,8 @@ async def add_entity(
         invalidate_location_summary_cache()
     except IntegrityError as e:
         db.rollback()
-        # Clean up image if device creation failed
-        if entity == ListingType.devices:
+        # Clean up image if model creation failed
+        if entity == ListingType.models:
             if front_image_path:
                 delete_device_image(front_image_path)
             if rear_image_path:
@@ -425,8 +425,8 @@ async def add_entity(
         )
     except HTTPException:
         db.rollback()
-        # Clean up image if device creation failed
-        if entity == ListingType.devices:
+        # Clean up image if model creation failed
+        if entity == ListingType.models:
             if front_image_path:
                 delete_device_image(front_image_path)
             if rear_image_path:
@@ -434,8 +434,8 @@ async def add_entity(
         raise
     except Exception as e:
         db.rollback()
-        # Clean up image if device creation failed
-        if entity == ListingType.devices:
+        # Clean up image if model creation failed
+        if entity == ListingType.models:
             if front_image_path:
                 delete_device_image(front_image_path)
             if rear_image_path:

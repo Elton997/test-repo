@@ -258,6 +258,8 @@ class ModelOut(BaseModel):
     device_type_id: int
     height: int
     description: Optional[str] = None
+    front_image_path: Optional[str] = None
+    rear_image_path: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -399,8 +401,6 @@ class DeviceOut(BaseModel):
     created_at: datetime
     last_updated: datetime
     description: Optional[str] = None
-    front_image_path: Optional[str] = None
-    rear_image_path: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -411,7 +411,7 @@ class DeviceCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255, description="Device name")
     serial_no: str = Field(..., min_length=1, max_length=255, description="Serial number")
     position: int = Field(..., ge=0, description="Position in rack (U)")
-    face: Literal["front", "rear", "both"] = Field(..., description="Device face (front/rear/both)")
+    face: str = Field(..., min_length=1, max_length=255, description="Device face (Front/Rear)")
     status: str = Field(..., min_length=1, max_length=255, description="Device status")
     
     devicetype_name: str = Field(..., min_length=1, max_length=255, description="Device Type name")
@@ -446,9 +446,7 @@ class DeviceUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     serial_no: Optional[str] = Field(None, max_length=255)
     position: Optional[int] = Field(None, ge=0)
-    face: Optional[Literal["front", "rear", "both"]] = None
-    # face_front: Optional[bool] = None
-    # face_rear: Optional[bool] = None
+    face: Optional[str] = Field(None, max_length=255, description="Device face (Front/Rear)")
     status: Optional[str] = Field(None, max_length=255)
     
     devicetype_id: Optional[int] = None
