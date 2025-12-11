@@ -76,7 +76,7 @@ export const routes: Routes = [
         path: Menu.Rack_Management + '/' + SubMenu.Racks + '/:rackId',
         loadComponent: () =>
           import('./components/rack-details/rack-details.component').then(m => m.RackDetailsComponent),
-          canActivate: [AuthGuard]
+        canActivate: [AuthGuard]
       },
       {
         path: Menu.Device_Management + '/' + SubMenu.Devices,
@@ -134,19 +134,29 @@ export const routes: Routes = [
           import('./components/add-manufacturer/add-manufacturer.component').then(m => m.AddManufacturerComponent),
       },
       {
-        path: Menu.Device_Management + '/' + SubMenu.Manufacturers + '/add',
+        path: Menu.Device_Management + '/' + SubMenu.Manufacturers + '/:manufacturerName',
         loadComponent: () =>
-          import('./components/add-manufacturer/add-manufacturer.component').then(m => m.AddManufacturerComponent),
-      },
-      {
-        path: Menu.Device_Management + '/' + SubMenu.Manufacturers + '/edit/:ManufacterID',
-        loadComponent: () =>
-          import('./components/add-manufacturer/add-manufacturer.component').then(m => m.AddManufacturerComponent),
+          import('./components/manufacturers-details/manufacturers-details.component').then(m => m.ManufacturersDetailsComponent),
       },
       {
         path: Menu.Device_Management + '/' + SubMenu.Models,
         loadComponent: () =>
           import('./components/models/models.component').then(m => m.ModelsComponent),
+      },
+      {
+        path: Menu.Device_Management + '/' + SubMenu.Models + '/add',
+        loadComponent: () =>
+          import('./components/add-model/add-model.component').then(m => m.AddModelComponent),
+      },
+      {
+        path: Menu.Device_Management + '/' + SubMenu.Models + '/edit/:model_name',
+        loadComponent: () =>
+          import('./components/add-model/add-model.component').then(m => m.AddModelComponent),
+      },
+      {
+        path: Menu.Device_Management + '/' + SubMenu.Models + '/:model_name',
+        loadComponent: () =>
+          import('./components/models-details/models-details.component').then(m => m.ModelsDetailsComponent),
       }
     ],
   },

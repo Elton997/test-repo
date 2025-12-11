@@ -20,18 +20,15 @@ export class ErrorInterceptor implements HttpInterceptor {
 
         const url = req.url.toLowerCase();
 
-        if (url.includes('login')) {
+        if (url.includes('login') || err.status === 419) {
           return throwError(() => err);
         }
-
-        if (err.status === 419) {
-          return throwError(() => err);
-        }
-
-        let message = 'Unexpected error occurred';
-
-        if (err.status in ERROR_CODES) {
+        let message = err.error?.message || err.error?.detail;
+        if(!message && err.status in ERROR_CODES) {
           message = ERROR_CODES[err.status];
+        }
+        if (!message) {
+          message = 'Unexpected error occurred';
         }
 
         this.errorService.showError(message);

@@ -1,14 +1,5 @@
-<app-dynamic-table
-    [title]="'Device Types'"
-    *ngIf="!loading"
-    [columns]="columns"
-    [data]="devicetypelist"
-    (rowClick)="handleRowClick($event)"
-    [totalCount]="totalCount" 
-    [pageSize]="pageSize" 
-    [offset]="offset" 
-    [filterConfig]="filters"
-    [appliedFilters]="appliedFilters"
-    (pageChange)="onPageChange($event)" 
+<app-dynamic-table [title]="'Device Types'" [columns]="columns" [data]="devicetypelist"
+    (rowClick)="handleRowClick($event)" [totalCount]="totalCount" [pageSize]="pageSize" [offset]="offset"
+    [filterConfig]="filters" [appliedFilters]="appliedFilters" (pageChange)="onPageChange($event)"
     (filtersChanged)="onFiltersChanged($event)">
 </app-dynamic-table>

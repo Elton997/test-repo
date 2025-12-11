@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { TitleService } from '../../shared/Services/title.service';
 import { Subscription } from 'rxjs';
+import { Router } from '@angular/router';
+import { Menu, SubMenu } from '../../menu.enum';
 import { ListService } from '../../services/list.service';
 import { PageEvent } from '@angular/material/paginator';
 import { CommonModule } from '@angular/common';
@@ -15,7 +17,7 @@ import { DynamicTableComponent, DynamicFilterField } from '../../shared/Componen
 })
 export class ModelsComponent implements OnInit {
 
-  constructor(private titleService: TitleService, private listService: ListService) { }
+  constructor(private titleService: TitleService, private router: Router, private listService: ListService) { }
 
   private subscriptions = new Subscription();
   loading: boolean = false;
@@ -27,7 +29,7 @@ export class ModelsComponent implements OnInit {
   appliedFilters: any = {};
 
   columns = [
-    { key: "name", label: "Model Name" },
+    { key: "name", label: "Model Name", type: "details" },
     { key: "make_name", label: "Make" },
     { key: "device_type", label: "Device Type" },
     { key: "height", label: "Height (U)" },
@@ -116,4 +118,9 @@ export class ModelsComponent implements OnInit {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
+
+  handleRowClick(data: any) {
+    this.router.navigate([Menu.Device_Management + '/' + SubMenu.Models, data]);
+  }
+
 }

@@ -1,0 +1,54 @@
+<div class="device-type-details-container">
+
+    <!-- Header Section -->
+    <div class="details-header">
+        <div class="header-content">
+            <h1 class="device-name">{{ model.name }}</h1>
+            <span class="badge badge-success">Active</span>
+        </div>
+    </div>
+
+    <div class="details-grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="left-column">
+            <div class="details-section primary-section">
+                <h2 class="section-title">Model Information</h2>
+
+                <div class="info-group">
+
+                    <div class="info-row">
+                        <span class="label">Model Name</span>
+                        <span class="value">{{ model.name }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">Make</span>
+                        <span class="value">{{ model.manufacturer }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">Device Type</span>
+                        <span class="value">{{ model.device_type }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">U Height</span>
+                        <span class="value">{{ model.u_height }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">Description</span>
+                        <span class="value">{{ model.description || '—' }}</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Right empty column -->
+        <div class="right-column"></div>
+
+    </div>
+
+</div>

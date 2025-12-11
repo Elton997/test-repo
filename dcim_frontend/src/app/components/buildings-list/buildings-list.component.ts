@@ -30,18 +30,15 @@ export class BuildingsListComponent implements OnInit {
     { key: 'status', label: 'Status' },
     { key: 'racks', label: 'Number of Racks' },
     { key: 'devices', label: 'Number of Devices' },
-    { key: 'description', label: 'Description' },
-    { key: 'actions', label: 'Edit', type: 'edit' }
+    { key: 'description', label: 'Description' }
   ];
   dashboardLoc: any;
 
   ngOnInit(): void {
     this.titleService.updateTitle('BUILDINGS');
-    // If navigated from dashboard, apply that location filter
     this.dashboardLoc = localStorage.getItem('dashboard_location_name');
     if (this.dashboardLoc) {
       this.appliedFilters = { ...(this.appliedFilters || {}), location_name: this.dashboardLoc };
-      // keep the stored value so UI can show it; do not remove here so user can navigate back
     }
 
     this.getBuildings();

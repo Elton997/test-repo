@@ -153,4 +153,5 @@ export class DeviceListComponent implements OnInit, OnDestroy {
     const deviceName = data?.name || data;
     this.router.navigate([Menu.Device_Management + '/' + SubMenu.Devices, deviceName]);
   }
+
 }

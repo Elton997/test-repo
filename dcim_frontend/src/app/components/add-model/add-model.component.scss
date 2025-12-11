@@ -52,6 +52,7 @@
 }
 
 input,
+select,
 textarea {
   padding: 10px 12px;
   border: 1px solid #a2ccfa;
@@ -66,13 +67,13 @@ textarea {
   resize: vertical;
 }
 
-input:focus, textarea:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
   border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37,99,235,0.08);
 }
 
-input:hover, textarea:hover {
+input:hover, select:hover, textarea:hover {
   transform: translateY(-1px);
 }
 

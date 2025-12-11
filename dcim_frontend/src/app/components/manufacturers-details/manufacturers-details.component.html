@@ -1,0 +1,86 @@
+<div class="device-type-details-container">
+
+    <!-- HEADER -->
+    <div class="details-header">
+        <div class="header-content">
+            <h1 class="device-name">{{ make.name }}</h1>
+            <span class="badge badge-success">Active</span>
+        </div>
+    </div>
+
+    <!-- === ROW 1 (Two columns) === -->
+    <div class="details-grid">
+
+        <!-- LEFT COLUMN: Manufacturer Info -->
+        <div class="left-column">
+            <div class="details-section primary-section">
+                <h2 class="section-title">Manufacturer Information</h2>
+
+                <div class="info-group">
+
+                    <div class="info-row">
+                        <span class="label">Make</span>
+                        <span class="value">{{ make.name }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">Total Racks</span>
+                        <span class="value">{{ make.total_racks }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">Total Device Types</span>
+                        <span class="value">{{ make.total_device_types }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">Total Models</span>
+                        <span class="value">{{ make.total_models }}</span>
+                    </div>
+
+                    <div class="info-row">
+                        <span class="label">Description</span>
+                        <span class="value">{{ make.description || '—' }}</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Device Types Table -->
+        <div class="right-column">
+            <div class="details-section">
+                <h2 class="section-title">Device Types</h2>
+
+                <div class="info-group">
+
+                    <!-- HEADER ROW -->
+                    <div class="info-row">
+                        <span class="label">Device Type</span>
+                        <span class="label">Height</span>
+                    </div>
+
+                    <!-- DATA ROWS -->
+                    <div class="info-row" *ngFor="let dt of make.device_types">
+                        <span class="value">{{ dt.name }}</span>
+                        <span class="value">{{ dt.height || '—' }}</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- === ROW 2 (Full Width Models List) === -->
+    <div class="details-section">
+        <h2 class="section-title">Models</h2>
+
+        <div class="info-group">
+            <div class="info-row" *ngFor="let m of make.models">
+                <span class="value">{{ m.name }}</span>
+            </div>
+        </div>
+    </div>
+
+</div>

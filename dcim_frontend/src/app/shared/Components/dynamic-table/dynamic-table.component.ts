@@ -18,6 +18,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { Router } from '@angular/router';
 import { Menu, SubMenu } from '../../../menu.enum';
 import { LoaderComponent } from '../loader/loader.component';
+import { ListService } from '../../../services/list.service';
+import { TitleService } from '../../Services/title.service';
 
 export interface DynamicFilterField {
   key: string;
@@ -91,7 +93,10 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
   constructor(
     private router: Router,
     private dialog: MatDialog,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private listService: ListService,
+    private titleService: TitleService
+
   ) { }
 
   private get storageKey(): string {
@@ -99,8 +104,9 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
   }
 
   // ---------------- LIFECYCLE ----------------
-
+  permissions: any = {};
   ngOnInit() {
+    this.permissions = JSON.parse(localStorage.getItem('config') || '');
     this.initializeColumnConfiguration();
     this.dataSource = new MatTableDataSource(this.data);
     // in case filterConfig already present on init
@@ -505,7 +511,7 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
 
   getUsedSpacePercent(value: any): number {
     if (value == null || value === undefined) return 0;
-    
+
     // Handle string percentage like "70%"
     if (typeof value === 'string') {
       const match = value.match(/(\d+(?:\.\d+)?)/);
@@ -513,12 +519,12 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
         return parseFloat(match[1]);
       }
     }
-    
+
     // Handle number (assumed to be percentage)
     if (typeof value === 'number') {
       return Math.min(100, Math.max(0, value));
     }
-    
+
     // Handle object with used_space and available_space or available_space_percent
     if (typeof value === 'object') {
       if (value.used_space !== undefined && value.height !== undefined && value.height > 0) {
@@ -529,7 +535,7 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
         return Math.min(100, Math.max(0, 100 - value.available_space_percent));
       }
     }
-    
+
     return 0;
   }
 
@@ -539,17 +545,17 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
 
   getSpaceDisplayValue(value: any): string {
     if (value == null || value === undefined) return '0%';
-    
+
     // If it's already a string like "70%", return it
     if (typeof value === 'string') {
       return value;
     }
-    
+
     // If it's a number, format as percentage
     if (typeof value === 'number') {
       return `${Math.round(value)}%`;
     }
-    
+
     // Handle object with available_space_percent
     if (typeof value === 'object') {
       if (value.available_space_percent !== undefined) {
@@ -560,7 +566,7 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
         return `${Math.round(usedPercent)}%`;
       }
     }
-    
+
     return '0%';
   }
 
@@ -573,9 +579,121 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
     this.pageChange.emit(event);
   }
 
-  onImport(row: any) { }
+  onImport(event: any) {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  exportCSV() { }
+    // ---- CSV VALIDATION ----
+    const fileName = file.name.toLowerCase();
+    const validMimeTypes = [
+      "text/csv",
+      "application/vnd.ms-excel" // sometimes CSV is detected as Excel MIME
+    ];
+
+    if (!fileName.endsWith(".csv") || !validMimeTypes.includes(file.type)) {
+      alert("Invalid file type! Please upload a .csv file only.");
+      event.target.value = ""; // reset input
+      return;
+    }
+    // ---- END VALIDATION ----
+
+    const entity = this.getEntityFromTitle();
+    if (!entity) {
+      console.error("Cannot import: unknown entity from title");
+      return;
+    }
+
+    this.listService.importItems(entity, file).subscribe({
+      next: (res) => {
+        console.log("Import success:", res);
+        alert("Import completed successfully!");
+      },
+      error: (err) => {
+        console.error("Import failed:", err);
+        alert("Import failed! Check console for error details.");
+      }
+    });
+  }
+
+
+  convertJsonToCsv(items: any[]): string {
+    if (!items || !items.length) return '';
+
+    const headers = Object.keys(items[0]).join(',');
+
+    const rows = items.map(row =>
+      Object.values(row)
+        .map(v => `"${v ?? ''}"`)
+        .join(',')
+    );
+
+    return [headers, ...rows].join('\n');
+  }
+
+  downloadCsv(csv: string, entity: string) {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    this.downloadBlob(blob, `${entity}.csv`);
+  }
+
+  downloadBlob(blob: Blob, filename: string) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const timestamp = new Date().toISOString()?.replace(/[:.]/g, '-');
+
+    a.href = url;
+    a.download = `${filename?.replace('.csv', '')}_${timestamp}.csv`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  exportCSV() {
+    const entity = this.getEntityFromTitle();
+    if (!entity) return;
+
+    this.listService.exportItems(entity, this.appliedFilters).subscribe({
+      next: (blob: Blob) => {
+
+        // Detect JSON
+        if (blob.type.includes("application/json")) {
+          blob.text().then(jsonText => {
+            const json = JSON.parse(jsonText);
+
+            // Convert JSON to CSV
+            const csv = this.convertJsonToCsv(json.results || json.data || json);
+
+            // Download CSV
+            this.downloadCsv(csv, entity);
+          });
+        } else {
+          // Backend returned CSV (just in case)
+          this.downloadBlob(blob, `${entity}.csv`);
+        }
+      },
+      error: err => console.error("Export failed:", err)
+    });
+  }
+
+
+
+  getEntityFromTitle(): string {
+    const title = (this.titleService.currentTitle || '').toLowerCase().trim();
+
+    switch (title) {
+      case 'racks': return 'racks';
+      case 'devices': return 'devices';
+      case 'device types': return 'device_types';
+      case 'models': return 'models';
+      case 'make': return 'makes';
+      case 'locations': return 'locations';
+      case 'buildings': return 'buildings';
+      case 'floors': return 'floors';
+      case 'wings': return 'wings';
+      case 'datacenters': return 'datacenters';
+    }
+    return '';
+  }
+
 
   ngOnDestroy(): void {
     if (typeof window !== 'undefined' && window?.localStorage) {
@@ -594,6 +712,8 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
       this.router.navigate([Menu.Organization + '/' + SubMenu.Locations + '/add']);
     } else if (this.title == 'Buildings') {
       this.router.navigate([Menu.Organization + '/' + SubMenu.Buildings + '/add']);
+    } else if (this.title == 'Models') {
+      this.router.navigate([Menu.Device_Management + '/' + SubMenu.Models + '/add']);
     } else if (this.title == 'Make') {
       this.router.navigate([Menu.Device_Management + '/' + SubMenu.Manufacturers + '/add']);
     }
@@ -607,12 +727,12 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
       );
     } else if (this.title == 'Devices') {
       this.router.navigate(
-        [Menu.Device_Management + '/' + SubMenu.Devices + '/edit', row?.Device_name],
+        [Menu.Device_Management + '/' + SubMenu.Devices + '/edit', (row?.name || row?.Device_name)],
         { state: row }
       );
     } else if (this.title == 'Device Types') {
       this.router.navigate(
-        [Menu.Device_Management + '/' + SubMenu.DeviceTypes + '/edit', row?.device_name],
+        [Menu.Device_Management + '/' + SubMenu.DeviceTypes + '/edit', (row?.name || row?.device_type || row?.device_name)],
         { state: row }
       );
     } else if (this.title == 'Locations') {
@@ -625,9 +745,14 @@ export class DynamicTableComponent implements OnInit, AfterViewInit, OnChanges, 
         [Menu.Organization + '/' + SubMenu.Buildings + '/edit', row?.building_id],
         { state: row }
       );
-    } else if (this.title == 'Manufacturers') {
+    } else if (this.title == 'Make') {
       this.router.navigate(
-        [Menu.Device_Management + '/' + SubMenu.Manufacturers + '/edit', row?.manu_name],
+        [Menu.Device_Management + '/' + SubMenu.Manufacturers + '/edit', row?.name],
+        { state: row }
+      );
+    } else if (this.title == 'Models') {
+      this.router.navigate(
+        [Menu.Device_Management + '/' + SubMenu.Models + '/edit', row?.name],
         { state: row }
       );
     }

@@ -1,87 +1,49 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { distinctUntilChanged } from 'rxjs/operators';
+import { ReactiveFormsModule, FormGroup, FormBuilder, Validators, FormControl } from '@angular/forms';
 import { TitleService } from '../../shared/Services/title.service';
-import { ActivatedRoute, Router } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { Inject, PLATFORM_ID } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { Subscription } from 'rxjs';
+import { ListService } from '../../services/list.service';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatInputModule } from '@angular/material/input';
+import { Router } from '@angular/router';
+import { Menu, SubMenu } from '../../menu.enum';
+import { distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
   selector: 'app-add-racks',
   templateUrl: './add-racks.component.html',
   styleUrls: ['./add-racks.component.scss'],
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatIconModule]
+  imports: [CommonModule, ReactiveFormsModule, MatButtonModule, MatIconModule, MatAutocompleteModule, MatInputModule]
 })
 export class AddRacksComponent implements OnInit {
 
   rackForm!: FormGroup;
   editData: any = null;
+  buildings: any[] = [];
+  filteredBuildings: any[] = [];
+  floors: any[] = [];
+  wings: any[] = [];
+  filteredFloors: any[] = [];
+  filteredWings: any[] = [];
+  datacenters: any[] = [];
+  filteredDatacenters: any = [];
+  private subscriptions = new Subscription();
+  dashboardLoc: any;
+  submit: boolean = false
 
   constructor(
     private fb: FormBuilder,
     private titleService: TitleService,
     @Inject(PLATFORM_ID) private platformId: any,
-    private route: ActivatedRoute,
+    private listService: ListService,
     private router: Router
   ) { }
-
-  // Static data 
-  locations = [
-    { id: 1, name: 'Hyderabad Campus' },
-    { id: 2, name: 'Bangalore Campus' },
-    { id: 3, name: 'Mumbai' },
-    { id: 4, name: 'Delhi DC' },
-  ];
-
-  buildings = [
-    { id: 10, locationId: 1, name: 'Alpha Building' },
-    { id: 11, locationId: 2, name: 'Beta Building' },
-    { id: 12, locationId: 3, name: 'Main Tower' },
-    { id: 13, locationId: 4, name: 'West Block' },
-  ];
-
-  wings = [
-    { id: 20, buildingId: 10, name: 'Wing A' },
-    { id: 21, buildingId: 10, name: 'Wing B' },
-    { id: 22, buildingId: 11, name: 'South Wing' },
-    { id: 23, buildingId: 12, name: 'North Wing' },
-    { id: 24, buildingId: 13, name: 'Wing C' },
-  ];
-
-  floors = [
-    { id: 30, wingId: 20, name: 'Floor 1' },
-    { id: 31, wingId: 20, name: 'Floor 2' },
-    { id: 32, wingId: 21, name: 'Ground Floor' },
-    { id: 33, wingId: 22, name: 'Level 3' },
-    { id: 34, wingId: 23, name: 'Level 5' },
-    { id: 35, wingId: 24, name: 'Floor 7' },
-  ];
-
-  datacentres = [
-    { id: 40, floorId: 30, name: 'DC-1A' },
-    { id: 41, floorId: 31, name: 'DC-1B' },
-    { id: 42, floorId: 32, name: 'DC-2A' },
-    { id: 43, floorId: 33, name: 'DC-3A' },
-    { id: 44, floorId: 34, name: 'DC-4A' },
-    { id: 45, floorId: 35, name: 'DC-4B' },
-  ];
-
-  filteredBuildings: any[] = [];
-  filteredWings: any[] = [];
-  filteredFloors: any[] = [];
-  filteredDCs: any[] = [];
-
-  rackNameExists = false;
-  rackNameInvalid = false;
-
-  devicesCount = 0;
-  spaceInfo = '0 / 40U';
-
-  submit: boolean = true;
 
   get win(): any {
     return typeof window !== 'undefined' ? window : null;
@@ -94,102 +56,288 @@ export class AddRacksComponent implements OnInit {
     }
 
     this.titleService.updateTitle(this.editData ? 'EDIT RACK' : 'ADD RACK');
-
+    this.dashboardLoc = localStorage.getItem('dashboard_location_name');
     this.rackForm = this.fb.group({
-      location: ['', Validators.required],
-      building: ['', Validators.required],
-      wing: ['', Validators.required],
-      floor: ['', Validators.required],
-      datacentre: ['', Validators.required],
-      rackName: ['', [
-        Validators.required,
-        Validators.pattern(/^[A-Za-z0-9_-]+$/)
-      ]],
-      status: ['', Validators.required],
-      height: [{ value: '40U', disabled: true }],
-      devices: [{ value: this.devicesCount, disabled: true }],
-      space: [{ value: this.spaceInfo, disabled: true }]
+      location: [this.editData?.location_name ? this.editData?.location_name : this.dashboardLoc, Validators.required],
+      building: [this.editData?.building_name ? this.editData?.building_name : '', Validators.required],
+      wing: [this?.editData?.wing_name ? this.editData?.wing_name : '', Validators.required],
+      floor: [this?.editData?.floor_name ? this?.editData?.floor_name : '', Validators.required],
+      datacenter: [this?.editData?.datacenter_name ? this?.editData?.datacenter_name : '', Validators.required],
+      rackName: [this?.editData?.name ? this?.editData?.name : '', [Validators.required, Validators.maxLength(50), Validators.pattern(/^[A-Za-z0-9_-]+$/)]],
+      status: [this?.editData?.status ? this?.editData?.status : 'active', Validators.required],
+      height: [{ value: this?.editData?.height ? this?.editData?.height : '42', disabled: true }],
+      width: [{ value: this?.editData?.width ? this?.editData?.width : '24', disabled: true }],
+      description: [this?.editData?.description ? this?.editData?.description : '', Validators.maxLength(200)]
     });
 
-    this.handleDependentDropdowns();
+    this.getBuildings();
 
     if (this.editData) {
+      this.buildingInputControl.setValue(this.editData?.building_name);
+      this.wingInputControl.setValue(this.editData?.wing_name);
+      this.floorInputControl.setValue(this.editData?.floor_name);
+      this.dcInputControl.setValue(this.editData?.datacenter_name);
+      this.getData("buildings")
+      this.getData("wings");
+      this.getData("floors");
+      this.getData("DC");
+
+    }
+  }
+
+  get f() {
+    return this.rackForm.controls;
+  }
+
+  getBuildings(): void {
+    this.buildings = [];
+    this.filteredBuildings = [];
+    this.wings = [];
+    this.filteredWings = [];
+    this.floors = [];
+    this.filteredFloors = [];
+    this.datacenters = [];
+    this.filteredDatacenters = [];
+    this.getData("buildings");
+  }
+
+  wingInputControl = new FormControl('');
+  floorInputControl = new FormControl('');
+  dcInputControl = new FormControl('');
+  getWings(event: any) {
+    if (this.rackForm.value.building != event.option.value) {
+      this.rackForm.get('building')?.setValue(event.option.value);
       this.rackForm.patchValue({
-        location: this.editData?.location,
-        building: this.editData?.building,
-        wing: this.editData?.wing, 
-        floor: this.editData?.floor,
-        datacentre: this.editData?.dataCentre,
-        rackName: this.editData?.name,
-        
+        floor: '',
+        datacenter: ''
       });
+      this.wingInputControl.setValue('')
+      this.floorInputControl.setValue('')
+      this.dcInputControl.setValue('')
+      this.wings = [];
+      this.filteredWings = [];
+      this.floors = [];
+      this.filteredFloors = [];
+      this.datacenters = [];
+      this.filteredDatacenters = [];
+      this.getData("wings");
+    }
+  }
+
+  getFloors(event: any) {
+    if (this.rackForm.value.wing != event.option.value) {
+      this.rackForm.get('wing')?.setValue(event.option.value);
+      this.rackForm.patchValue({
+        floor: '',
+        datacenter: ''
+      });
+      this.floorInputControl.setValue('')
+      this.dcInputControl.setValue('')
+      this.floors = [];
+      this.filteredFloors = [];
+      this.datacenters = [];
+      this.filteredDatacenters = [];
+      this.getData("floors")
+      this.getData("floors");
     }
 
-
-
-
   }
 
-
-  handleDependentDropdowns() {
-    this.rackForm.get('location')?.valueChanges
-      .pipe(distinctUntilChanged())
-      .subscribe(locId => {
-        const id = Number(locId);
-        this.filteredBuildings = this.buildings.filter(b => b.locationId === id);
-        this.filteredWings = [];
-        this.filteredFloors = [];
-        this.filteredDCs = [];
-        this.resetLowerFields('building');
+  getDataCenters(event: any) {
+    if (this.rackForm.value.floor != event.option.value) {
+      this.rackForm.get('floor')?.setValue(event.option.value)
+      this.rackForm.patchValue({
+        datacenter: ''
       });
+      this.dcInputControl.setValue('')
+      this.datacenters = [];
+      this.filteredDatacenters = [];
+      this.getData("DC");
+    }
 
-    this.rackForm.get('building')?.valueChanges
-      .pipe(distinctUntilChanged())
-      .subscribe(bId => {
-        const id = Number(bId);
-        this.filteredWings = this.wings.filter(w => w.buildingId === id);
-        this.filteredFloors = [];
-        this.filteredDCs = [];
-        this.resetLowerFields('wing');
-      });
-
-    this.rackForm.get('wing')?.valueChanges
-      .pipe(distinctUntilChanged())
-      .subscribe(wId => {
-        const id = Number(wId);
-        this.filteredFloors = this.floors.filter(f => f.wingId === id);
-        this.filteredDCs = [];
-        this.resetLowerFields('floor');
-      });
-
-    this.rackForm.get('floor')?.valueChanges
-      .pipe(distinctUntilChanged())
-      .subscribe(fId => {
-        const id = Number(fId);
-        this.filteredDCs = this.datacentres.filter(dc => dc.floorId === id);
-      });
+    this.getData("DC")
   }
 
-  resetLowerFields(except?: string) {
-    const obj: any = {};
-    if (except !== 'building') obj.building = '';
-    if (except !== 'wing') obj.wing = '';
-    if (except !== 'floor') obj.floor = '';
-    if (except !== 'datacentre') obj.datacentre = '';
-
-    this.rackForm.patchValue(obj, { emitEvent: false });
+  getData(val: any) {
+    if (val == "buildings") {
+      this.subscriptions.add(
+        this.listService.listItems({ entity: 'buildings', location_name: this.rackForm.value.location })
+          .subscribe({
+            next: (res: any) => {
+              this.buildings = res?.results;
+              this.filteredBuildings = this.buildings
+            },
+            error: (err: any) => {
+              console.error("API error fetching buildings:", err);
+            }
+          })
+      );
+    }
+    if (val == "wings") {
+      this.subscriptions.add(
+        this.listService.listItems({
+          entity: 'wings', location_name: this.rackForm.value.location,
+          building_name: this.rackForm.value.building
+        })
+          .subscribe({
+            next: (res: any) => {
+              this.wings = res?.results;
+              this.filteredWings = this.wings
+            },
+            error: (err: any) => {
+              console.error("API error fetching wings:", err);
+            }
+          })
+      );
+    }
+    if (val == "floors") {
+      this.subscriptions.add(
+        this.listService.listItems({
+          entity: 'floors', location_name: this.rackForm.value.location,
+          building_name: this.rackForm.value.building, wing_name: this.rackForm.value.wing
+        })
+          .subscribe({
+            next: (res: any) => {
+              this.floors = res?.results;
+              this.filteredFloors = this.floors
+            },
+            error: (err: any) => {
+              console.error("API error fetching floors:", err);
+            }
+          })
+      );
+    }
+    if (val == "DC") {
+      this.subscriptions.add(
+        this.listService.listItems({
+          entity: 'datacenters', location_name: this.rackForm.value.location,
+          building_name: this.rackForm.value.building, wing_name: this.rackForm.value.wing,
+          floor_name: this.rackForm.value.floor
+        })
+          .subscribe({
+            next: (res: any) => {
+              this.datacenters = res?.results;
+              this.filteredDatacenters = this.datacenters
+            },
+            error: (err: any) => {
+              console.error("API error fetching data centers:", err);
+            }
+          })
+      );
+    }
   }
 
-  saveRack() {
-    this.submit = true;
-
-    if (this.rackForm.invalid) {
-      this.submit = false;
-      if (this.editData) {
-
-      } else {
-
+  onSearch(event: any, key: any) {
+    if (event.target.value) {
+      const search = event.target.value.toLowerCase();
+      if (key == 'building') {
+        this.filteredBuildings = this.buildings.filter(b =>
+          b.name.toLowerCase().includes(search)
+        );
+      }
+      if (key == 'wing') {
+        this.filteredWings = this.wings.filter(b =>
+          b.name.toLowerCase().includes(search)
+        );
+      }
+      if (key == 'floor') {
+        this.filteredFloors = this.floors.filter(b =>
+          b.name.toLowerCase().includes(search)
+        );
+      }
+      if (key == 'datacenter') {
+        this.filteredDatacenters = this.datacenters.filter(b =>
+          b.name.toLowerCase().includes(search)
+        );
       }
     }
   }
+
+  buildingInputControl = new FormControl('');
+
+  resetAllFields() {
+    this.buildingInputControl.reset('');
+    this.wingInputControl.reset('');
+    this.floorInputControl.reset('');
+    this.dcInputControl.reset('');
+
+    this.filteredBuildings = [];
+    this.filteredWings = [];
+    this.filteredFloors = [];
+    this.filteredDatacenters = [];
+
+    this.rackForm.get('rackName')?.setValue('');
+    this.rackForm.get('description')?.setValue('');
+    this.rackForm.get('building')?.setValue('');
+    this.rackForm.get('wing')?.setValue('');
+    this.rackForm.get('floor')?.setValue('');
+    this.rackForm.get('datacenter')?.setValue('');
+
+    this.getBuildings();
+  }
+
+  saveRack(val: any) {
+    this.submit = true;
+    if (this.rackForm.valid) {
+      const rackData: RackPayload = {
+        name: this.rackForm.value.rackName,
+        location_name: this.rackForm.value.location,
+        building_name: this.rackForm.value.building,
+        wing_name: this.rackForm.value.wing,
+        floor_name: this.rackForm.value.floor,
+        datacenter_name: this.rackForm.value.datacenter,
+        status: this.rackForm.value.status.toLowerCase(),
+        width: Math.floor(Number(this.rackForm.getRawValue().width)),
+        height: Math.floor(Number(this.rackForm.getRawValue().height)),
+        description: this.rackForm.value.description
+      };
+      if (this.editData) {
+        this.listService.updateRack(this.editData?.name, rackData).subscribe({
+          next: () => {
+            this.submit = false;
+            this.router.navigate([Menu.Rack_Management + '/' + SubMenu.Racks]);
+          },
+          error: (err: any) => {
+            this.submit = false;
+          }
+        });
+      } else {
+        this.listService.addRack(rackData).subscribe({
+          next: () => {
+            this.submit = false;
+            if (val == 'save') {
+              alert("Rack saved successfully!");
+              this.router.navigate([Menu.Rack_Management + '/' + SubMenu.Racks]);
+            } else if (val == 'addAnother') {
+              alert("Rack saved successfully!");
+              this.resetAllFields();
+            }
+          },
+
+          error: (err: any) => {
+            this.submit = false;
+          }
+        });
+      }
+
+    }
+
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
+}
+
+export interface RackPayload {
+  name: string;
+  location_name: string;
+  building_name: string;
+  wing_name: string;
+  floor_name: string;
+  datacenter_name: string;
+  status: string;
+  width: number;
+  height: number;
+  description: string;
 }

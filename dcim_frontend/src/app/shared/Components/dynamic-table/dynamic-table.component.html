@@ -9,7 +9,7 @@
 
   <button mat-raised-button color="primary" (click)="openColumnConfig(columnConfigDialog)">Configure Columns</button>
 
-  <button mat-raised-button color="primary" (click)="onAdd()">Add</button>
+  <button mat-raised-button color="primary" *ngIf="permissions.is_editable && title != 'Buildings'" (click)="onAdd()">Add</button>
   <button mat-raised-button color="primary" (click)="exportCSV()">Export</button>
   <input type="file" hidden #importer (change)="onImport($event)">
   <button mat-raised-button color="primary" (click)="importer.click()">Import</button>
@@ -134,7 +134,7 @@
           <!-- Edit Action Column -->
           <ng-template #checkAction>
             <ng-container *ngIf="col.type == 'edit'; else normalCell">
-              <img src="assets/images/edit.png" class="edit-icon" (click)="onEdit(row);" matTooltip="Edit" />
+              <img *ngIf="permissions?.is_editable" src="assets/images/edit.png" class="edit-icon" (click)="onEdit(row);" matTooltip="Edit" />
             </ng-container>
           </ng-template>
 

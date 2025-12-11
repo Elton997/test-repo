@@ -16,9 +16,6 @@ import { CommonModule } from '@angular/common';
   styleUrl: './device-type-list.component.scss'
 })
 export class DeviceTypeListComponent implements OnInit {
-
-  private loadingTimeout: any;
-
   constructor(private titleService: TitleService, private router: Router, private listService: ListService) { }
   private subscriptions = new Subscription();
   loading: boolean = false;
@@ -33,6 +30,7 @@ export class DeviceTypeListComponent implements OnInit {
     { key: "name", label: "Device Type Name", type: 'details' },
     { key: "make", label: "Make" },
     { key: "u_height", label: "U_height" },
+    { key: "devices", label: "No. of Devices" },
     { key: "description", label: "Description" },
     { key: 'actions', label: 'Edit', type: 'edit' }
   ];

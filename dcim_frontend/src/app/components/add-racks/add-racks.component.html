@@ -3,59 +3,96 @@
   <div class="rack-card">
     <h2 class="section-title">Rack</h2>
 
-    <form [formGroup]="rackForm" class="rack-form" (ngSubmit)="saveRack()">
+    <form [formGroup]="rackForm" class="rack-form">
 
       <div class="form-grid">
 
         <!-- Location -->
         <div class="form-row">
           <label class="form-label">Location <span class="required">*</span></label>
-          <select formControlName="location">
-            <option value="">Select location</option>
-            <option *ngFor="let loc of locations" [ngValue]="loc.name">{{ loc.name }}</option>
-          </select>
+          <input type="text" formControlName="location" readonly />
         </div>
 
-        <!-- Building -->
+
         <div class="form-row">
           <label class="form-label">Building <span class="required">*</span></label>
-          <select formControlName="building">
-            <option value="">Select building</option>
-            <option *ngFor="let b of filteredBuildings" [ngValue]="b.name">{{ b.name }}</option>
-          </select>
+
+          <input type="text" placeholder="Select building..." class="mat-input-element" [matAutocomplete]="autoBuilding"
+            (input)="onSearch($event,'building')" [formControl]="buildingInputControl"/>
+
+          <mat-autocomplete #autoBuilding="matAutocomplete" (optionSelected)="getWings($event)">
+            <mat-option *ngFor="let b of filteredBuildings" [value]="b.name">
+              {{ b.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submit && f['building'].errors?.['required']">
+            Select Building
+          </span>
         </div>
+
+
 
         <!-- Wing -->
         <div class="form-row">
           <label class="form-label">Wing <span class="required">*</span></label>
-          <select formControlName="wing">
-            <option value="">Select wing</option>
-            <option *ngFor="let w of filteredWings" [ngValue]="w.name">{{ w.name }}</option>
-          </select>
+          <input type="text"
+            [placeholder]="rackForm.value.building ? 'Select wing... ' : 'Please select building first'"
+            class="mat-input-element" [matAutocomplete]="autoWing" (input)="onSearch($event,'wing')"
+            [formControl]="wingInputControl" />
+          <mat-autocomplete #autoWing="matAutocomplete" (optionSelected)="getFloors($event)">
+            <mat-option *ngFor="let w of filteredWings" [value]="w.name">
+              {{ w.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submit && f['wing'].errors?.['required']">
+            Select Wing
+          </span>
         </div>
 
         <!-- Floor -->
         <div class="form-row">
           <label class="form-label">Floor <span class="required">*</span></label>
-          <select formControlName="floor">
-            <option value="">Select floor</option>
-            <option *ngFor="let f of filteredFloors" [ngValue]="f.name">{{ f.name }}</option>
-          </select>
+          <input type="text" [placeholder]="rackForm.value.wing ? 'Select floor... ' : 'Please select wing first'"
+            class="mat-input-element" [matAutocomplete]="autoFloor" (input)="onSearch($event,'floor')"
+            [formControl]="floorInputControl" />
+          <mat-autocomplete #autoFloor="matAutocomplete" (optionSelected)="getDataCenters($event)">
+            <mat-option *ngFor="let f of filteredFloors" [value]="f.name">
+              {{ f.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submit && f['floor'].errors?.['required']">
+            Select floor
+          </span>
         </div>
 
         <!-- Datacentre -->
         <div class="form-row">
-          <label class="form-label">Data Centre <span class="required">*</span></label>
-          <select formControlName="datacentre">
-            <option value="">Select data centre</option>
-            <option *ngFor="let dc of filteredDCs" [ngValue]="dc.name">{{ dc.name }}</option>
-          </select>
+          <label class="form-label">Data Center <span class="required">*</span></label>
+          <input type="text"
+            [placeholder]="rackForm.value.floor ? 'Select data center... ' : 'Please select floor first'"
+            class="mat-input-element" [matAutocomplete]="autoDC" (input)="onSearch($event,'datacenter')"
+            [formControl]="dcInputControl" />
+          <mat-autocomplete #autoDC="matAutocomplete"
+            (optionSelected)="rackForm.get('datacenter')?.setValue($event.option.value)">
+            <mat-option *ngFor="let d of filteredDatacenters" [value]="d.name">
+              {{ d.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submit && f['datacenter'].errors?.['required']">
+            Select data center
+          </span>
         </div>
 
         <!-- Rack Name -->
         <div class="form-row">
           <label class="form-label">Rack Name <span class="required">*</span></label>
           <input type="text" formControlName="rackName" placeholder="e.g. RACK-01" />
+          <span class="error" *ngIf="submit && f['rackName'].errors?.['required']">
+            Enter rack name
+          </span>
+          <span class="error" *ngIf="submit && f['rackName'].errors?.['pattern']">
+            Enter valid rack name
+          </span>
         </div>
 
         <!-- Status -->
@@ -63,8 +100,8 @@
           <label class="form-label">Status <span class="required">*</span></label>
           <select formControlName="status">
             <option value="">Select status</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
           </select>
         </div>
 
@@ -74,36 +111,36 @@
           <input formControlName="height" readonly />
         </div>
 
-        <!-- Devices -->
+        <!-- Width -->
         <div class="form-row">
-          <label class="form-label">Devices</label>
-          <input formControlName="devices" readonly />
+          <label class="form-label">Width</label>
+          <input formControlName="width" readonly />
         </div>
 
-        <!-- Space -->
+        <!-- Description -->
         <div class="form-row">
-          <label class="form-label">Occupied Space</label>
-          <input formControlName="space" readonly />
+          <label class="form-label">Description</label>
+          <textarea formControlName="description" rows="3" class="description-textarea">
+          </textarea>
+
+          <span class="error" *ngIf="f['description'].errors?.['maxlength']">
+            Maximum 200 characters allowed
+          </span>
         </div>
 
       </div>
 
       <div class="btn-row">
+        <button mat-flat-button color="warn" (click)="resetAllFields()" type="button">Reset</button>
 
-        <button mat-flat-button color="warn" type="button">
-          Cancel
-        </button>
-
-        <button mat-flat-button color="primary" type="submit">
+        <button mat-flat-button color="primary" type="button" (click)="saveRack('save')">
           {{ editData ? 'Update' : 'Save' }}
         </button>
 
-        <button mat-flat-button color="accent" type="button" *ngIf="!editData">
+        <button mat-flat-button color="accent" type="button" *ngIf="!editData" (click)="saveRack('addAnother')">
           Save & Add Another
         </button>
-
       </div>
-
 
     </form>
   </div>

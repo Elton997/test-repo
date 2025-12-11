@@ -7,40 +7,34 @@
 
       <div class="form-grid">
 
-        <!-- Device Name -->
+        <!-- Device Type Name -->
         <div class="form-row">
-          <label class="form-label">Device Name <span class="required">*</span></label>
-          <select formControlName="deviceName">
-            <option value="">Select</option>
-            <option *ngFor="let v of deviceNames" [ngValue]="v">{{ v }}</option>
-          </select>
+          <label class="form-label">Device Type Name <span class="required">*</span></label>
+          <input type="text" formControlName="deviceTypeName" />
+          <span class="error" *ngIf="submitAttempted && deviceTypeForm.get('deviceTypeName')?.errors?.['required']">
+            This field is required
+          </span>
         </div>
 
-        <!-- Predefined Height -->
+        <!-- Make Name -->
         <div class="form-row">
-          <label class="form-label">Predefined Height (U) <span class="required">*</span></label>
-          <select formControlName="predefinedHeight">
-            <option value="">Select</option>
-            <option *ngFor="let v of predefinedHeights" [ngValue]="v">{{ v }}</option>
+          <label class="form-label">Make Name <span class="required">*</span></label>
+          <select formControlName="makeName">
+            <option value="">Select make...</option>
+            <option *ngFor="let v of makes" [ngValue]="v">{{ v }}</option>
           </select>
+          <span class="error" *ngIf="submitAttempted && deviceTypeForm.get('makeName')?.errors?.['required']">
+            This field is required
+          </span>
         </div>
 
-        <!-- Manufacturer ID -->
-        <div class="form-row">
-          <label class="form-label">Manufacturer ID <span class="required">*</span></label>
-          <select formControlName="manufacturerID">
-            <option value="">Select</option>
-            <option *ngFor="let v of manufacturerIDs" [ngValue]="v">{{ v }}</option>
-          </select>
-        </div>
-
-        <!-- Model Name -->
-        <div class="form-row">
-          <label class="form-label">Model Name <span class="required">*</span></label>
-          <select formControlName="modelName">
-            <option value="">Select</option>
-            <option *ngFor="let v of modelNames" [ngValue]="v">{{ v }}</option>
-          </select>
+        <!-- Description -->
+        <div class="form-row form-col-1">
+          <label class="form-label">Description <span class="required">*</span></label>
+          <textarea rows="3" formControlName="description"></textarea>
+          <span class="error" *ngIf="submitAttempted && deviceTypeForm.get('description')?.errors?.['required']">
+            This field is required
+          </span>
         </div>
 
       </div>

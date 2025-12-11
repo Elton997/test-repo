@@ -1,10 +1,12 @@
 import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { TitleService } from '../../shared/Services/title.service';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { ListService } from '../../services/list.service';
+import { Menu, SubMenu } from '../../menu.enum';
 
 @Component({
   selector: 'app-add-device-type',
@@ -17,23 +19,8 @@ export class AddDeviceTypeComponent implements OnInit {
 
   deviceTypeForm!: FormGroup;
   editData: any = null;
-  submit: boolean = true;
-
-  
-  // sample row
-  masterRow = {
-    id: 1,
-    device_name: 'Switch',
-    predefined_height: 1,
-    manufactures_id: 1,
-    models_name: 'OEMR XL R210'
-  };
-
-  
-  deviceNames = [this.masterRow.device_name];
-  predefinedHeights = [this.masterRow.predefined_height, 1, 2, 4, 6]; // you may extend
-  manufacturerIDs = [this.masterRow.manufactures_id, 1, 2, 3, 4, 5];
-  modelNames = [this.masterRow.models_name];
+  submitAttempted = false;
+  makes: string[] = [];
 
   get win(): any {
     return typeof window !== 'undefined' ? window : null;
@@ -42,7 +29,9 @@ export class AddDeviceTypeComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private router: Router,
+    private route: ActivatedRoute,
     private titleService: TitleService,
+    private listService: ListService,
     @Inject(PLATFORM_ID) private platformId: any
   ) {}
 
@@ -53,51 +42,118 @@ export class AddDeviceTypeComponent implements OnInit {
       const state = this.win.history.state;
       this.editData = state && Object.keys(state).some(k => k !== 'navigationId') ? state : null;
     }
+    const routeId = this.route.snapshot.paramMap.get('devicetypeID');
+    if (!this.editData && routeId) {
+      this.listService.getDetails('device_types', routeId).subscribe({
+        next: (res: any) => {
+          if (res) {
+            this.editData = { ...res, name: res?.name || routeId };
+            this.patchFormFromEdit();
+          }
+        },
+        error: () => { /* keep form empty if not found */ }
+      });
+    }
 
     console.log("Device Type Edit Data:", this.editData);
 
     this.titleService.updateTitle(this.editData ? 'EDIT DEVICE TYPE' : 'ADD DEVICE TYPE');
 
     this.deviceTypeForm = this.fb.group({
-      deviceName: ['', Validators.required],
-      predefinedHeight: ['', Validators.required],
-      manufacturerID: ['', Validators.required],
-      modelName: ['', Validators.required]
+      deviceTypeName: [this.editData?.device_type_name || this.editData?.device_name || '', Validators.required],
+      makeName: [this.editData?.make_name || this.editData?.manufacturer_name || '', Validators.required],
+      description: [this.editData?.description || '', Validators.required]
     });
 
+    this.loadMakes();
+
     if (this.editData) {
-      this.deviceTypeForm.patchValue({
-        deviceName: this.editData.device_name,
-        predefinedHeight: this.editData.predefined_height,
-        manufacturerID: this.editData.manufactures_id,
-        modelName: this.editData.models_name
-      });
+      this.patchFormFromEdit();
     }
   }
 
   saveDeviceType() {
-    this.submit = true;
+    this.submitAttempted = true;
 
     if (this.deviceTypeForm.invalid) {
-      this.submit = false;
       return;
     }
 
-    console.log("Device Type Saved:", this.deviceTypeForm.getRawValue());
+    const payload = this.deviceTypeForm.getRawValue();
+    const apiPayload = {
+      name: payload.deviceTypeName,
+      make_name: payload.makeName,
+      description: payload.description
+    };
 
-    this.router.navigate(['/device-types']);
+    const req$ = this.editData
+      ? this.listService.updateDeviceType(this.editData?.device_type_name || this.editData?.device_name || payload.deviceTypeName, apiPayload)
+      : this.listService.createDeviceType(apiPayload);
+
+    req$.subscribe({
+      next: () => {
+        this.submitAttempted = false;
+        this.router.navigate([Menu.Device_Management + '/' + SubMenu.DeviceTypes]);
+      },
+      error: (err) => {
+        this.submitAttempted = false;
+        console.error('Failed to save device type', err);
+      }
+    });
   }
 
   saveAndAddAnother() {
+    this.submitAttempted = true;
     if (this.deviceTypeForm.invalid) return;
 
-    console.log("Save & Add Another:", this.deviceTypeForm.getRawValue());
+    const payload = this.deviceTypeForm.getRawValue();
+    const apiPayload = {
+      name: payload.deviceTypeName,
+      make_name: payload.makeName,
+      description: payload.description
+    };
 
-    this.deviceTypeForm.reset();
+    this.listService.createDeviceType(apiPayload).subscribe({
+      next: () => {
+        this.submitAttempted = false;
+        this.deviceTypeForm.reset();
+      },
+      error: (err) => {
+        this.submitAttempted = false;
+        console.error('Failed to save device type', err);
+      }
+    });
   }
 
   onCancel() {
-    this.router.navigate(['/device-types']);
+    this.router.navigate([Menu.Device_Management + '/' + SubMenu.DeviceTypes]);
+  }
+
+  private loadMakes() {
+    this.listService.listItems({ entity: 'makes', offset: 0, page_size: 100 })
+      .subscribe((res: any) => {
+        this.makes = (res?.results || []).map((m: any) => m.name || m.make_name || m.make || m);
+        const current = this.deviceTypeForm.get('makeName')?.value;
+        const editMake = this.editData?.make_name || this.editData?.manufacturer_name || this.editData?.make || '';
+        const candidate = current || editMake;
+        if (candidate && !this.makes.includes(candidate)) {
+          this.makes.push(candidate);
+        }
+      });
+  }
+
+  private patchFormFromEdit() {
+    if (!this.editData) return;
+    this.deviceTypeForm.patchValue({
+      deviceTypeName: this.editData.device_type_name || this.editData.device_name || this.editData.name || '',
+      makeName: this.editData.make_name || this.editData.manufacturer_name || '',
+      description: this.editData.description || ''
+    });
+    // ensure current make is in list
+    const makeVal = this.deviceTypeForm.get('makeName')?.value;
+    if (makeVal && !this.makes.includes(makeVal)) {
+      this.makes.push(makeVal);
+    }
   }
 
 }

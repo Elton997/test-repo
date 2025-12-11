@@ -1,0 +1,99 @@
+<div class="page-container">
+
+    <div class="rack-card">
+        <h2 class="section-title">Model</h2>
+
+        <form [formGroup]="modelForm" class="rack-form">
+
+            <div class="form-grid">
+                <!-- Model Name -->
+                <div class="form-row">
+                    <label class="form-label">Model Name <span class="required">*</span></label>
+                    <input type="text" formControlName="modelName" placeholder="Enter model name" />
+                    <span class="error" *ngIf="submit && f['modelName'].errors?.['required']">
+                        Enter model name
+                    </span>
+                    <span class="error" *ngIf="submit && f['modelName'].errors?.['pattern']">
+                        Only alphanumeric, hyphen (-) and underscore (_) allowed
+                    </span>
+                </div>
+
+                <!-- Make -->
+                <div class="form-row">
+                    <label class="form-label">Make <span class="required">*</span></label>
+
+                    <input type="text" placeholder="Select make..." class="mat-input-element"
+                        [matAutocomplete]="autoMake" [formControl]="makeInputControl"
+                        (input)="onSearch($event,'make')" />
+
+                    <mat-autocomplete #autoMake="matAutocomplete" (optionSelected)="getDeviceTypes($event)">
+                        <mat-option *ngFor="let m of filteredMakes" [value]="m.name">
+                            {{ m.name }}
+                        </mat-option>
+                    </mat-autocomplete>
+
+                    <span class="error" *ngIf="submit && f['make'].errors?.['required']">
+                        Select Make
+                    </span>
+                </div>
+
+                <!-- Device Type -->
+                <div class="form-row">
+                    <label class="form-label">Device Type <span class="required">*</span></label>
+
+                    <input type="text" placeholder="Select device type..." class="mat-input-element"
+                        [matAutocomplete]="autoDevice" [formControl]="deviceTypeInputControl"
+                        (input)="onSearch($event,'deviceType')" />
+
+                    <mat-autocomplete #autoDevice="matAutocomplete"
+                        (optionSelected)="modelForm.get('deviceType')?.setValue($event.option.value)">
+                        <mat-option *ngFor="let d of filteredDeviceTypes" [value]="d.name">
+                            {{ d.name }}
+                        </mat-option>
+                    </mat-autocomplete>
+
+                    <span class="error" *ngIf="submit && f['deviceType'].errors?.['required']">
+                        Select Device Type
+                    </span>
+                </div>
+
+                <!-- Height -->
+                <div class="form-row">
+                    <label class="form-label">Height<span class="required">*</span></label>
+                    <input type="text" formControlName="height" placeholder="Example: 42" />
+                    <span class="error" *ngIf="submit && f['height'].errors?.['required']">
+                        Enter height
+                    </span>
+                    <span class="error" *ngIf="submit && f['height'].errors?.['pattern']">
+                        Height must be a number
+                    </span>
+                </div>
+
+                <!-- Description -->
+                <div class="form-row" style="grid-column: span 2;">
+                    <label class="form-label">Description</label>
+                    <textarea formControlName="description" rows="3" class="description-textarea"></textarea>
+
+                    <span class="error" *ngIf="f['description'].errors?.['maxlength']">
+                        Maximum 200 characters allowed
+                    </span>
+                </div>
+
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-row">
+                <button mat-flat-button color="warn" type="button" (click)="resetAllFields()">Reset</button>
+
+                <button mat-flat-button color="primary" type="button" (click)="saveModel('save')">
+                    {{ editData ? 'Update' : 'Save' }}
+                </button>
+
+                <button mat-flat-button color="accent" type="button" *ngIf="!editData" (click)="saveModel('addAnother')">
+                    Save & Add Another
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>

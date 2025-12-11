@@ -16,197 +16,266 @@
         <!-- Status -->
         <div class="form-row">
           <label class="form-label">Status <span class="required">*</span></label>
-          <select formControlName="status">
+          <select formControlName="status" [class.placeholder]="!deviceForm.value.status">
             <option value="">Select status</option>
             <option *ngFor="let s of statuses" [ngValue]="s">{{ s }}</option>
           </select>
+          <span class="error" *ngIf="submitAttempted && f['status'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
-        <!-- Location -->
+        <!-- IP Address -->
+        <div class="form-row">
+          <label class="form-label">IP Address <span class="required">*</span></label>
+          <input type="text" formControlName="ipAddress" />
+          <span class="error" *ngIf="submitAttempted && f['ipAddress'].errors?.['required']">
+            This field needs to be selected
+          </span>
+        </div>
+
+        <!-- Face -->
+        <div class="form-row">
+          <label class="form-label">Face <span class="required">*</span></label>
+          <select formControlName="face" [class.placeholder]="!deviceForm.value.face">
+            <option value="">Select</option>
+            <option *ngFor="let f of faceOptions" [ngValue]="f">{{ f }}</option>
+          </select>
+          <span class="error" *ngIf="submitAttempted && f['face'].errors?.['required']">
+            This field needs to be selected
+          </span>
+        </div>
+
+        <!-- Location: fixed / pre-selected -->
         <div class="form-row">
           <label class="form-label">Location <span class="required">*</span></label>
-          <select formControlName="location">
-            <option value="">Select</option>
-            <option *ngFor="let v of locations" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" formControlName="location" readonly />
         </div>
 
-        <!-- Building -->
+        <!-- Building: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Building <span class="required">*</span></label>
-          <select formControlName="building">
-            <option value="">Select</option>
-            <option *ngFor="let v of buildings" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" placeholder="Select building..." class="mat-input-element" [matAutocomplete]="autoBuilding"
+            (input)="onSearch($event,'building')" [formControl]="buildingInputControl"/>
+          <mat-autocomplete #autoBuilding="matAutocomplete" (optionSelected)="getWings($event)">
+            <mat-option *ngFor="let b of filteredBuildings" [value]="b.name">
+              {{ b.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submitAttempted && f['building'].errors?.['required']">
+            Select Building
+          </span>
         </div>
 
-        <!-- Wing -->
+        <!-- Wing: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Wing <span class="required">*</span></label>
-          <select formControlName="wing">
-            <option value="">Select</option>
-            <option *ngFor="let v of wings" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text"
+            [placeholder]="deviceForm.value.building ? 'Select wing... ' : 'Please select building first'"
+            class="mat-input-element" [matAutocomplete]="autoWing" (input)="onSearch($event,'wing')"
+            [formControl]="wingInputControl" />
+          <mat-autocomplete #autoWing="matAutocomplete" (optionSelected)="getFloors($event)">
+            <mat-option *ngFor="let w of filteredWings" [value]="w.name">
+              {{ w.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submitAttempted && f['wing'].errors?.['required']">
+            Select Wing
+          </span>
         </div>
 
-        <!-- Floor -->
+        <!-- Floor: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Floor <span class="required">*</span></label>
-          <select formControlName="floor">
-            <option value="">Select</option>
-            <option *ngFor="let v of floors" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" [placeholder]="deviceForm.value.wing ? 'Select floor... ' : 'Please select wing first'"
+            class="mat-input-element" [matAutocomplete]="autoFloor" (input)="onSearch($event,'floor')"
+            [formControl]="floorInputControl" />
+          <mat-autocomplete #autoFloor="matAutocomplete" (optionSelected)="getDataCenters($event)">
+            <mat-option *ngFor="let f of filteredFloors" [value]="f.name">
+              {{ f.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submitAttempted && f['floor'].errors?.['required']">
+            Select floor
+          </span>
         </div>
 
-        <!-- Room -->
-        <div class="form-row">
-          <label class="form-label">Room No <span class="required">*</span></label>
-          <select formControlName="roomNo">
-            <option value="">Select</option>
-            <option *ngFor="let v of rooms" [ngValue]="v">{{ v }}</option>
-          </select>
-        </div>
-
-        <!-- Datacentre -->
+        <!-- Datacentre: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Data Centre <span class="required">*</span></label>
-          <select formControlName="datacentre">
-            <option value="">Select</option>
-            <option *ngFor="let v of datacentres" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text"
+            [placeholder]="deviceForm.value.floor ? 'Select data center... ' : 'Please select floor first'"
+            class="mat-input-element" [matAutocomplete]="autoDC" (input)="onSearch($event,'datacenter')"
+            [formControl]="dcInputControl" />
+          <mat-autocomplete #autoDC="matAutocomplete" (optionSelected)="getRacks($event)">
+            <mat-option *ngFor="let d of filteredDatacentres" [value]="d.name">
+              {{ d.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submitAttempted && f['datacentre'].errors?.['required']">
+            Select data center
+          </span>
         </div>
 
-        <!-- Rack No -->
+        <!-- Rack Name: will be fetched from api-->
         <div class="form-row">
-          <label class="form-label">Rack No <span class="required">*</span></label>
-          <select formControlName="rackNo">
-            <option value="">Select</option>
-            <option *ngFor="let v of racks" [ngValue]="v">{{ v }}</option>
-          </select>
+          <label class="form-label">Rack Name <span class="required">*</span></label>
+          <input type="text"
+            [placeholder]="deviceForm.value.datacentre ? 'Select rack... ' : 'Please select data center first'"
+            class="mat-input-element" [matAutocomplete]="autoRack" (input)="onSearch($event,'rack')"
+            [formControl]="rackInputControl" />
+          <mat-autocomplete #autoRack="matAutocomplete" (optionSelected)="setRack($event)">
+            <mat-option *ngFor="let r of filteredRacks" [value]="r.name">
+              {{ r.name }}
+            </mat-option>
+          </mat-autocomplete>
+          <span class="error" *ngIf="submitAttempted && f['rackNo'].errors?.['required']">
+            Select rack
+          </span>
         </div>
 
-        <!-- Height -->
+        <!-- Make: will be fetched from api-->
         <div class="form-row">
-          <label class="form-label">Height (U) <span class="required">*</span></label>
-          <input type="number" formControlName="height" />
+          <label class="form-label">Make <span class="required">*</span></label>
+          <select formControlName="make" [class.placeholder]="!deviceForm.value.make">
+            <option value="">Select make...</option>
+            <option *ngFor="let v of makes" [ngValue]="v">{{ v }}</option>
+          </select>
+          <span class="error" *ngIf="submitAttempted && f['make'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
-        <!-- Device Type -->
+        <!-- Device Type: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Device Type <span class="required">*</span></label>
-          <select formControlName="deviceType">
-            <option value="">Select</option>
+          <select formControlName="deviceType" [disabled]="!deviceForm.value.make" [class.placeholder]="!deviceForm.value.deviceType">
+            <option value="">{{ deviceForm.value.make ? 'Select device type...' : 'Please select make first' }}</option>
             <option *ngFor="let v of deviceTypes" [ngValue]="v">{{ v }}</option>
           </select>
+          <span class="error" *ngIf="submitAttempted && f['deviceType'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
-        <!-- Model Name -->
+        <!-- Model Name: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Model Name <span class="required">*</span></label>
-          <input type="text" formControlName="modelName" />
+          <select formControlName="modelName" [disabled]="!deviceForm.value.deviceType" [class.placeholder]="!deviceForm.value.modelName">
+            <option value="">{{ deviceForm.value.deviceType ? 'Select model...' : 'Please select device type first' }}</option>
+            <option *ngFor="let v of models" [ngValue]="v">{{ v }}</option>
+          </select>
+          <span class="error" *ngIf="submitAttempted && f['modelName'].errors?.['required']">
+            This field needs to be selected
+          </span>
+        </div>
+
+        <!-- Rack Slot (U Position) -->
+        <div class="form-row">
+          <label class="form-label">Rack Slot (U Position) <span class="required">*</span></label>
+          <input type="number" formControlName="rackSlot" min="1" />
+          <span class="error" *ngIf="submitAttempted && f['rackSlot'].errors?.['required']">
+            This field needs to be selected
+          </span>
+        </div>
+
+        <!-- Asset Owner -->
+        <div class="form-row">
+          <label class="form-label">Asset Owner <span class="required">*</span></label>
+          <select formControlName="assetOwner" [class.placeholder]="!deviceForm.value.assetOwner">
+            <option value="">Select asset owner...</option>
+            <option *ngFor="let v of assetOwners" [ngValue]="v">{{ v }}</option>
+          </select>
+          <span class="error" *ngIf="submitAttempted && f['assetOwner'].errors?.['required']">
+            This field needs to be selected
+          </span>
+        </div>
+
+        <!-- Asset User -->
+        <div class="form-row">
+          <label class="form-label">Asset User <span class="required">*</span></label>
+          <select formControlName="assetUser" [class.placeholder]="!deviceForm.value.assetUser">
+            <option value="">Select asset user...</option>
+            <option *ngFor="let v of assetUsers" [ngValue]="v">{{ v }}</option>
+          </select>
+          <span class="error" *ngIf="submitAttempted && f['assetUser'].errors?.['required']">
+            This field needs to be selected
+          </span>
+        </div>
+        
+        <!-- Application -->
+        <div class="form-row">
+          <label class="form-label">Application <span class="required">*</span></label>
+          <select formControlName="applicationName" [class.placeholder]="!deviceForm.value.applicationName">
+            <option value="">Select</option>
+            <option *ngFor="let v of applicationNames" [ngValue]="v">{{ v }}</option>
+          </select>
+          <span class="error" *ngIf="submitAttempted && f['applicationName'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
         <!-- Serial Number -->
         <div class="form-row">
           <label class="form-label">Serial Number <span class="required">*</span></label>
           <input type="text" formControlName="serialNumber" />
-        </div>
-
-        <!-- Manufacturer -->
-        <div class="form-row">
-          <label class="form-label">Manufacturer <span class="required">*</span></label>
-          <select formControlName="manufacturer">
-            <option value="">Select</option>
-            <option *ngFor="let v of manufacturers" [ngValue]="v">{{ v }}</option>
-          </select>
-        </div>
-
-        <!-- IP Address -->
-        <div class="form-row">
-          <label class="form-label">IP Address</label>
-          <input type="text" formControlName="ipAddress" />
+          <span class="error" *ngIf="submitAttempted && f['serialNumber'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
         <!-- PO Number -->
         <div class="form-row">
-          <label class="form-label">PO Number</label>
+          <label class="form-label">PO Number <span class="required">*</span></label>
           <input type="text" formControlName="poNumber" />
+          <span class="error" *ngIf="submitAttempted && f['poNumber'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
         <!-- Warranty Start -->
         <div class="form-row">
-          <label class="form-label">Warranty Start</label>
+          <label class="form-label">Warranty Start <span class="required">*</span></label>
           <input type="date" formControlName="warrantyStartDate" />
+          <span class="error" *ngIf="submitAttempted && f['warrantyStartDate'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
         <!-- Warranty End -->
         <div class="form-row">
-          <label class="form-label">Warranty End</label>
+          <label class="form-label">Warranty End <span class="required">*</span></label>
           <input type="date" formControlName="warrantyEndDate" />
+          <span class="error" *ngIf="submitAttempted && f['warrantyEndDate'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
         <!-- AMC Start -->
         <div class="form-row">
-          <label class="form-label">AMC Start</label>
+          <label class="form-label">AMC Start <span class="required">*</span></label>
           <input type="date" formControlName="amcStartDate" />
+          <span class="error" *ngIf="submitAttempted && f['amcStartDate'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
         <!-- AMC End -->
         <div class="form-row">
-          <label class="form-label">AMC End</label>
+          <label class="form-label">AMC End <span class="required">*</span></label>
           <input type="date" formControlName="amcEndDate" />
+          <span class="error" *ngIf="submitAttempted && f['amcEndDate'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
-        <!-- Asset Owner -->
-        <div class="form-row">
-          <label class="form-label">Asset Owner</label>
-          <input type="text" formControlName="assetOwner" />
-        </div>
-
-        <!-- Asset User -->
-        <div class="form-row">
-          <label class="form-label">Asset User</label>
-          <input type="text" formControlName="assetUser" />
-        </div>
-
-        <!-- Attachments -->
-        <div class="form-row">
-          <label class="form-label">Attachments</label>
-
-          <div class="dropzone" (click)="fileInput.click()" tabindex="0" (keydown.enter)="fileInput.click()">
-            <input #fileInput type="file" (change)="onFilesSelected($event)" multiple hidden />
-            <div class="dropzone-inner">
-              <svg class="dz-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M12 3v10" stroke="#0ea5a4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M8 7l4-4 4 4" stroke="#0ea5a4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <rect x="3" y="13" width="18" height="8" rx="2" stroke="#94a3b8" stroke-width="1"/>
-              </svg>
-
-              <div class="dropzone-text">
-                <div class="dz-title">Click to upload or drag files here</div>
-                <div class="dz-sub">Multiple files allowed • .pdf .png .jpg .zip</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="attachments-list" *ngIf="selectedFiles.length">
-            <div class="attachment-row" *ngFor="let f of selectedFiles; let i = index">
-              <div class="attachment-left">
-                <svg class="file-mini-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M14 2v6h6" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <span class="attachment-name">{{ f.name }}</span>
-              </div>
-              <button class="btn remove" type="button" (click)="removeFile(i)">Remove</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Application Mapping -->
+        <!-- Description -->
         <div class="form-row form-col-1">
-          <label class="form-label">Application Mapping</label>
-          <textarea rows="2" formControlName="applicationMapping"></textarea>
+          <label class="form-label">Description <span class="required">*</span></label>
+          <textarea rows="2" formControlName="description"></textarea>
+          <span class="error" *ngIf="submitAttempted && f['description'].errors?.['required']">
+            This field needs to be selected
+          </span>
         </div>
 
       </div>

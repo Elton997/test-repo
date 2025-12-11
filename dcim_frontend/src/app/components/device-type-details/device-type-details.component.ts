@@ -1,6 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TitleService } from '../../shared/Services/title.service';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { ListService } from '../../services/list.service';
 
 @Component({
   selector: 'app-device-type-details',
@@ -9,20 +12,60 @@ import { TitleService } from '../../shared/Services/title.service';
   templateUrl: './device-type-details.component.html',
   styleUrl: './device-type-details.component.scss'
 })
-export class DeviceTypeDetailsComponent implements OnInit {
+export class DeviceTypeDetailsComponent implements OnInit, OnDestroy {
 
-  deviceType = {
-    type_name: 'Router',
-    manufacturer: 'Cisco',
-    height_u: 2,
-    total_models: 14,
-    total_devices: 224,
-    comments: 'Core routing device category used in aggregation layers.'
-  };
+  private subscriptions = new Subscription();
+  loading: boolean = false;
 
-  constructor(private titleService: TitleService) { }
+  // Holds API response
+  deviceType: any = null;
+
+  constructor(
+    private titleService: TitleService,
+    private route: ActivatedRoute,
+    private listService: ListService
+  ) { }
 
   ngOnInit(): void {
     this.titleService.updateTitle('DEVICE TYPE DETAILS');
+    const id = this.route.snapshot.params['device_type'];
+    if (id) {
+      this.fetchDeviceTypeDetails(id);
+    }
+  }
+
+  /** Fetch device type details */
+  fetchDeviceTypeDetails(id: string): void {
+    this.loading = true;
+
+    this.subscriptions.add(
+      this.listService.getDetails('device_types', id).subscribe({
+        next: (res: any) => {
+          try {
+            this.deviceType = {
+              id: res?.data?.id,
+              type_name: res?.data?.name,
+              description: res?.data?.description,
+              manufacturer: res?.data?.make?.name,
+              height_u: res?.data?.height || res?.data?.model?.height,
+              total_models: res?.data?.stats?.model_count,
+              total_devices: res?.data?.stats?.device_count
+            };
+          } catch (innerErr) {
+            console.error("Error processing API result:", innerErr);
+          } finally {
+            this.loading = false;
+          }
+        },
+        error: (err: any) => {
+          console.error("API Error:", err);
+          this.loading = false;
+        }
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 }

@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { DynamicTableComponent,DynamicFilterField } from '../../shared/Components/dynamic-table/dynamic-table.component';
+import { DynamicTableComponent, DynamicFilterField } from '../../shared/Components/dynamic-table/dynamic-table.component';
 import { TitleService } from '../../shared/Services/title.service';
+import { Menu, SubMenu } from '../../menu.enum';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ListService } from '../../services/list.service';
@@ -29,7 +30,7 @@ export class ManufacturersComponent implements OnInit, OnDestroy {
   appliedFilters: any = {};
 
   columns = [
-    { key: "name", label: "Make" },
+    { key: "name", label: "Make", type: "details" },
     { key: "racks", label: "racks" },
     { key: "devices", label: "devices" },
     { key: "models", label: "models" },
@@ -99,4 +100,7 @@ export class ManufacturersComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
+  handleRowClick(data: any) {
+    this.router.navigate([Menu.Device_Management + '/' + SubMenu.Manufacturers, data]);
+  }
 }

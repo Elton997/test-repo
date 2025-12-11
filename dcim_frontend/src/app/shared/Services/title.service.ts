@@ -18,7 +18,11 @@ export class TitleService {
     this.title.setTitle(newTitle); // updates browser tab title
   }
 
-  setLoc(newLoc:string){
+  setLoc(newLoc: string) {
     this._loc$.next(newLoc)
+  }
+
+  get currentTitle(): string {
+    return this._title$.value;
   }
 }

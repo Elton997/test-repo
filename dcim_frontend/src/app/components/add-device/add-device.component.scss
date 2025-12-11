@@ -67,6 +67,42 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 1px 2px rgba(2,6,23,0.04), 0 0 0 2px rgba(59,130,246,0.03);
   }
 
+  input::placeholder {
+    color: rgba(0, 0, 0, 0.6);
+    opacity: 1;
+  }
+
+  input::-webkit-input-placeholder {
+    color: rgba(0, 0, 0, 0.6);
+    opacity: 1;
+  }
+
+  input::-moz-placeholder {
+    color: rgba(0, 0, 0, 0.6);
+    opacity: 1;
+  }
+
+  input:-ms-input-placeholder {
+    color: rgba(0, 0, 0, 0.6);
+    opacity: 1;
+  }
+
+  select {
+    color: #0f172a;
+    
+    option:first-child {
+      color: rgba(0, 0, 0, 0.6);
+    }
+
+    option:not(:first-child) {
+      color: #0f172a;
+    }
+
+    &.placeholder {
+      color: rgba(0, 0, 0, 0.6);
+    }
+  }
+
   input:hover, select:hover, textarea:hover {
     transform: translateY(-1px);
   }

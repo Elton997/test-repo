@@ -1,4 +1,5 @@
 <app-dynamic-table [title]="'Models'" [columns]="columns" [data]="modellist" [pageSize]="pageSize" [loading]="loading"
     [totalCount]="totalCount" [offset]="offset" [filterConfig]="filters" [appliedFilters]="appliedFilters"
-    (pageChange)="onPageChange($event)" (filtersChanged)="onFiltersChanged($event)">
+    (pageChange)="onPageChange($event)" (filtersChanged)="onFiltersChanged($event)" (rowClick)="handleRowClick($event)">
+
 </app-dynamic-table>

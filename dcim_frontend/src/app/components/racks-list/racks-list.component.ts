@@ -6,7 +6,6 @@ import { TitleService } from '../../shared/Services/title.service';
 import { Subscription } from 'rxjs';
 import { ListService } from '../../services/list.service';
 import { PageEvent } from '@angular/material/paginator';
-
 @Component({
   selector: 'app-racks-list',
   standalone: true,
@@ -15,8 +14,6 @@ import { PageEvent } from '@angular/material/paginator';
   styleUrl: './racks-list.component.scss'
 })
 export class RacksListComponent implements OnInit, OnDestroy {
-  private loadingTimeout: any;
-
   constructor(private router: Router, private titleService: TitleService, private listService: ListService) { }
 
   private subscriptions = new Subscription();
@@ -84,11 +81,11 @@ export class RacksListComponent implements OnInit, OnDestroy {
             try {
               this.racks = res?.results;
               this.totalCount = res?.total;
+              this.loading = false
             } catch (innerErr) {
               console.error('Error processing result:', innerErr);
-            } finally {
               this.loading = false;
-            }
+            } 
           },
           error: (err: any) => {
             console.error('API error:', err);
