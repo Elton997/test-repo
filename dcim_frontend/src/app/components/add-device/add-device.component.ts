@@ -42,14 +42,31 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
   makes: string[] = [];
   deviceTypes: string[] = [];
   models: string[] = [];
-  assetOwners: string[] = ['Cloud Infrastructure Team','Network Operations Team','Data Center Facilities'];
+  assetOwners: string[] = [];
   applicationNames: string[] = [];
+  filteredMakes: string[] = [];
+  filteredDeviceTypes: string[] = [];
+  filteredModels: string[] = [];
+  filteredAssetOwners: string[] = [];
+  filteredApplicationNames: string[] = [];
+  filteredStatuses: string[] = [];
+  filteredFaces: string[] = [];
+  filteredAssetUsers: string[] = [];
+  initialFormValue: any = null;
   defaultLocation: string | null = null;
   buildingInputControl = new FormControl('');
   wingInputControl = new FormControl('');
   floorInputControl = new FormControl('');
   dcInputControl = new FormControl('');
   rackInputControl = new FormControl('');
+  makeInputControl = new FormControl('');
+  deviceTypeInputControl = new FormControl('');
+  modelInputControl = new FormControl('');
+  assetOwnerInputControl = new FormControl('');
+  applicationInputControl = new FormControl('');
+  statusInputControl = new FormControl('');
+  faceInputControl = new FormControl('');
+  assetUserInputControl = new FormControl('');
 
   get win(): any {
     return typeof window !== 'undefined' ? window : null;
@@ -121,13 +138,21 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
       description: [this.editData?.description || '', Validators.required]
     });
 
+    this.filteredStatuses = this.statuses;
+    this.filteredFaces = this.faceOptions;
+    this.filteredAssetUsers = this.assetUsers;
+
     this.loadMakes();
     this.loadApplications();
+    this.loadAssetOwners();
     this.loadBuildings();
 
     if (this.editData) {
       this.applyEditDataToForm();
       this.prefetchDependentData();
+      this.initialFormValue = this.deviceForm.getRawValue();
+    } else {
+      this.initialFormValue = this.createBlankFormValues();
     }
 
     this.setupDropdownDependencies();
@@ -199,17 +224,41 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
           this.floorInputControl.reset('');
           this.dcInputControl.reset('');
           this.rackInputControl.reset('');
+          this.makeInputControl.reset('');
+          this.deviceTypeInputControl.reset('');
+          this.modelInputControl.reset('');
+          this.assetOwnerInputControl.reset('');
+          this.applicationInputControl.reset('');
+          this.statusInputControl.reset('');
+          this.faceInputControl.reset('');
+          this.assetUserInputControl.reset('');
           this.filteredBuildings = [];
           this.filteredWings = [];
           this.filteredFloors = [];
           this.filteredDatacentres = [];
           this.filteredRacks = [];
+          this.filteredMakes = [];
+          this.filteredDeviceTypes = [];
+          this.filteredModels = [];
+          this.filteredAssetOwners = [];
+          this.filteredApplicationNames = [];
+          this.filteredStatuses = [];
+          this.filteredFaces = [];
+          this.filteredAssetUsers = [];
           this.buildings = [];
           this.wings = [];
           this.floors = [];
           this.datacentres = [];
           this.racks = [];
+          this.deviceTypes = [];
+          this.models = [];
+          this.filteredStatuses = this.statuses;
+          this.filteredFaces = this.faceOptions;
+          this.filteredAssetUsers = this.assetUsers;
           this.loadBuildings();
+          this.loadMakes();
+          this.loadApplications();
+          this.loadAssetOwners();
         } else {
           this.router.navigate(['StockRoom/Devices']);
         }
@@ -220,11 +269,6 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
       }
     });
   }
-
-  onCancel() {
-    this.router.navigate(['StockRoom/Devices']);
-  }
-
 
   private setupDropdownDependencies() {
     this.subscriptions.add(
@@ -316,7 +360,11 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
         .subscribe((make: string) => {
           this.resetLowerFields(['deviceType', 'modelName']);
           this.deviceTypes = [];
+          this.filteredDeviceTypes = [];
           this.models = [];
+          this.filteredModels = [];
+          this.deviceTypeInputControl.setValue('');
+          this.modelInputControl.setValue('');
           if (make) {
             this.loadDeviceTypes(make);
           }
@@ -329,6 +377,8 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
         .subscribe((deviceType: string) => {
           this.resetLowerFields(['modelName']);
           this.models = [];
+          this.filteredModels = [];
+          this.modelInputControl.setValue('');
           const make = this.deviceForm.value.make;
           if (make && deviceType) {
             this.loadModels(make, deviceType);
@@ -403,12 +453,60 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
           r.name.toLowerCase().includes(search)
         );
       }
+      if (key === 'make') {
+        this.filteredMakes = this.makes.filter((m: string) =>
+          m.toLowerCase().includes(search)
+        );
+      }
+      if (key === 'deviceType') {
+        this.filteredDeviceTypes = this.deviceTypes.filter((d: string) =>
+          d.toLowerCase().includes(search)
+        );
+      }
+      if (key === 'model') {
+        this.filteredModels = this.models.filter((m: string) =>
+          m.toLowerCase().includes(search)
+        );
+      }
+      if (key === 'assetOwner') {
+        this.filteredAssetOwners = this.assetOwners.filter((a: string) =>
+          a.toLowerCase().includes(search)
+        );
+      }
+      if (key === 'application') {
+        this.filteredApplicationNames = this.applicationNames.filter((a: string) =>
+          a.toLowerCase().includes(search)
+        );
+      }
+      if (key === 'status') {
+        this.filteredStatuses = this.statuses.filter((s: string) =>
+          s.toLowerCase().includes(search)
+        );
+      }
+      if (key === 'face') {
+        this.filteredFaces = this.faceOptions.filter((f: string) =>
+          f.toLowerCase().includes(search)
+        );
+      }
+      if (key === 'assetUser') {
+        this.filteredAssetUsers = this.assetUsers.filter((a: string) =>
+          a.toLowerCase().includes(search)
+        );
+      }
     } else {
       if (key === 'building') this.filteredBuildings = this.buildings;
       if (key === 'wing') this.filteredWings = this.wings;
       if (key === 'floor') this.filteredFloors = this.floors;
       if (key === 'datacenter') this.filteredDatacentres = this.datacentres;
       if (key === 'rack') this.filteredRacks = this.racks;
+      if (key === 'make') this.filteredMakes = this.makes;
+      if (key === 'deviceType') this.filteredDeviceTypes = this.deviceTypes;
+      if (key === 'model') this.filteredModels = this.models;
+      if (key === 'assetOwner') this.filteredAssetOwners = this.assetOwners;
+      if (key === 'application') this.filteredApplicationNames = this.applicationNames;
+      if (key === 'status') this.filteredStatuses = this.statuses;
+      if (key === 'face') this.filteredFaces = this.faceOptions;
+      if (key === 'assetUser') this.filteredAssetUsers = this.assetUsers;
     }
   }
 
@@ -496,6 +594,224 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
     this.deviceForm.get('rackNo')?.setValue(event.option.value);
   }
 
+  getMake(event: any) {
+    if ((event?.option?.value || '').toString().trim().toLowerCase() === (this.deviceForm.value.make || '').toString().trim().toLowerCase()) {
+      return;
+    }
+    const selectedValue = event.option.value;
+    this.deviceForm.get('make')?.setValue(selectedValue);
+    this.makeInputControl.setValue(selectedValue);
+    this.deviceForm.patchValue({
+      deviceType: '',
+      modelName: ''
+    });
+    this.deviceTypeInputControl.setValue('');
+    this.modelInputControl.setValue('');
+    this.deviceTypes = [];
+    this.filteredDeviceTypes = [];
+    this.models = [];
+    this.filteredModels = [];
+    if (selectedValue) {
+      this.loadDeviceTypes(selectedValue);
+    }
+  }
+
+  getDeviceType(event: any) {
+    if ((event?.option?.value || '').toString().trim().toLowerCase() === (this.deviceForm.value.deviceType || '').toString().trim().toLowerCase()) {
+      return;
+    }
+    const selectedValue = event.option.value;
+    this.deviceForm.get('deviceType')?.setValue(selectedValue);
+    this.deviceTypeInputControl.setValue(selectedValue);
+    this.deviceForm.patchValue({
+      modelName: ''
+    });
+    this.modelInputControl.setValue('');
+    this.models = [];
+    this.filteredModels = [];
+    if (selectedValue && this.deviceForm.value.make) {
+      this.loadModels(this.deviceForm.value.make, selectedValue);
+    }
+  }
+
+  getModel(event: any) {
+    const selectedValue = event.option.value;
+    this.deviceForm.get('modelName')?.setValue(selectedValue);
+    this.modelInputControl.setValue(selectedValue);
+  }
+
+  getAssetOwner(event: any) {
+    const selectedValue = event.option.value;
+    this.deviceForm.get('assetOwner')?.setValue(selectedValue);
+    this.assetOwnerInputControl.setValue(selectedValue);
+  }
+
+  getApplication(event: any) {
+    const selectedValue = event.option.value;
+    this.deviceForm.get('applicationName')?.setValue(selectedValue);
+    this.applicationInputControl.setValue(selectedValue);
+  }
+
+  /**
+   * Keep the visible input text in sync with the form control when the field loses focus.
+   * Prevents accidental clearing when clicking outside the autocomplete.
+   */
+  onFieldBlur(key: string) {
+    const formControlMap: Record<string, string> = {
+      building: 'building',
+      wing: 'wing',
+      floor: 'floor',
+      datacentre: 'datacentre',
+      rackNo: 'rackNo',
+      make: 'make',
+      deviceType: 'deviceType',
+      modelName: 'modelName',
+      assetOwner: 'assetOwner',
+      applicationName: 'applicationName',
+      status: 'status',
+      face: 'face',
+      assetUser: 'assetUser'
+    };
+    const inputControlMap: Record<string, FormControl> = {
+      building: this.buildingInputControl,
+      wing: this.wingInputControl,
+      floor: this.floorInputControl,
+      datacentre: this.dcInputControl,
+      rackNo: this.rackInputControl,
+      make: this.makeInputControl,
+      deviceType: this.deviceTypeInputControl,
+      modelName: this.modelInputControl,
+      assetOwner: this.assetOwnerInputControl,
+      applicationName: this.applicationInputControl,
+      status: this.statusInputControl,
+      face: this.faceInputControl,
+      assetUser: this.assetUserInputControl
+    };
+
+    const formKey = formControlMap[key];
+    const inputControl = inputControlMap[key];
+    const formValue = this.deviceForm.get(formKey)?.value ?? '';
+    if (inputControl) {
+      inputControl.setValue(formValue, { emitEvent: false });
+    }
+  }
+
+  resetForm() {
+    if (this.editData) {
+      // Restore to initial edit values
+      this.deviceForm.reset(this.initialFormValue || {});
+      this.syncInputsFromForm();
+      this.filteredStatuses = this.statuses;
+      this.filteredFaces = this.faceOptions;
+      this.filteredAssetUsers = this.assetUsers;
+      this.filteredMakes = this.makes;
+      this.filteredDeviceTypes = this.deviceTypes;
+      this.filteredModels = this.models;
+      this.filteredAssetOwners = this.assetOwners;
+      this.filteredApplicationNames = this.applicationNames;
+      this.loadBuildings();
+      this.prefetchDependentData();
+    } else {
+      // Clear everything in add mode
+      this.deviceForm.reset(this.initialFormValue || this.createBlankFormValues());
+      // Ensure location restores to default after reset in add mode
+      this.deviceForm.patchValue({ location: this.defaultLocation || '' });
+      this.clearOptionLists();
+      this.syncInputsFromForm();
+      this.loadMakes();
+      this.loadApplications();
+      this.loadAssetOwners();
+      this.loadBuildings();
+    }
+  }
+
+  private createBlankFormValues() {
+    return {
+      deviceName: '',
+      ipAddress: '',
+      status: '',
+      location: this.defaultLocation || '',
+      building: '',
+      wing: '',
+      floor: '',
+      datacentre: '',
+      rackNo: '',
+      make: '',
+      deviceType: '',
+      modelName: '',
+      rackSlot: null,
+      face: '',
+      assetOwner: '',
+      assetUser: '',
+      serialNumber: '',
+      poNumber: '',
+      applicationName: '',
+      warrantyStartDate: '',
+      warrantyEndDate: '',
+      amcStartDate: '',
+      amcEndDate: '',
+      description: ''
+    };
+  }
+
+  private clearOptionLists() {
+    this.buildings = [];
+    this.wings = [];
+    this.floors = [];
+    this.datacentres = [];
+    this.racks = [];
+    this.deviceTypes = [];
+    this.models = [];
+    this.filteredBuildings = [];
+    this.filteredWings = [];
+    this.filteredFloors = [];
+    this.filteredDatacentres = [];
+    this.filteredRacks = [];
+    this.filteredMakes = [];
+    this.filteredDeviceTypes = [];
+    this.filteredModels = [];
+    this.filteredAssetOwners = [];
+    this.filteredApplicationNames = [];
+    this.filteredStatuses = this.statuses;
+    this.filteredFaces = this.faceOptions;
+    this.filteredAssetUsers = this.assetUsers;
+  }
+
+  private syncInputsFromForm() {
+    const val = this.deviceForm.getRawValue();
+    this.buildingInputControl.setValue(val.building || '', { emitEvent: false });
+    this.wingInputControl.setValue(val.wing || '', { emitEvent: false });
+    this.floorInputControl.setValue(val.floor || '', { emitEvent: false });
+    this.dcInputControl.setValue(val.datacentre || '', { emitEvent: false });
+    this.rackInputControl.setValue(val.rackNo || '', { emitEvent: false });
+    this.makeInputControl.setValue(val.make || '', { emitEvent: false });
+    this.deviceTypeInputControl.setValue(val.deviceType || '', { emitEvent: false });
+    this.modelInputControl.setValue(val.modelName || '', { emitEvent: false });
+    this.assetOwnerInputControl.setValue(val.assetOwner || '', { emitEvent: false });
+    this.applicationInputControl.setValue(val.applicationName || '', { emitEvent: false });
+    this.statusInputControl.setValue(val.status || '', { emitEvent: false });
+    this.faceInputControl.setValue(val.face || '', { emitEvent: false });
+    this.assetUserInputControl.setValue(val.assetUser || '', { emitEvent: false });
+  }
+
+  getStatus(event: any) {
+    const selectedValue = event.option.value;
+    this.deviceForm.get('status')?.setValue(selectedValue);
+    this.statusInputControl.setValue(selectedValue);
+  }
+
+  getFace(event: any) {
+    const selectedValue = event.option.value;
+    this.deviceForm.get('face')?.setValue(selectedValue);
+    this.faceInputControl.setValue(selectedValue);
+  }
+
+  getAssetUserSelection(event: any) {
+    const selectedValue = event.option.value;
+    this.deviceForm.get('assetUser')?.setValue(selectedValue);
+    this.assetUserInputControl.setValue(selectedValue);
+  }
+
   getData(val: string) {
     if (val === 'wings') {
       this.subscriptions.add(
@@ -581,6 +897,7 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
     this.listService.listItems({ entity: 'makes', offset: 0, page_size: 100 })
       .subscribe((res: any) => {
         this.makes = this.mapNames(res?.results, ['name', 'make', 'make_name', 'manufacturer']);
+        this.filteredMakes = this.makes;
       });
   }
 
@@ -588,9 +905,9 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
     this.listService.listItems({ entity: 'applications', offset: 0, page_size: 100 })
       .subscribe((res: any) => {
         this.applicationNames = this.mapNames(res?.results, ['name', 'application_name', 'applications_mapped_name']);
+        this.filteredApplicationNames = this.applicationNames;
       });
   }
-
 
   private loadDeviceTypes(makeName?: string) {
     const filters: any = { entity: 'device_types', offset: 0, page_size: 100 };
@@ -598,6 +915,7 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
     this.listService.listItems(filters)
       .subscribe((res: any) => {
         this.deviceTypes = this.mapNames(res?.results, ['name', 'device_type', 'devicetype_name']);
+        this.filteredDeviceTypes = this.deviceTypes;
       });
   }
 
@@ -608,10 +926,21 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
     this.listService.listItems(filters)
       .subscribe((res: any) => {
         this.models = this.mapNames(res?.results, ['name', 'model_name']);
+        this.filteredModels = this.models;
       });
   }
 
-  // asset owners are static for now; no loaders
+  private loadAssetOwners() {
+    this.listService.listItems({ entity: 'asset_owner', offset: 0, page_size: 10 })
+      .subscribe((res: any) => {
+        this.assetOwners = this.mapNames(res?.results, ['name', 'asset_owner_name', 'asset_owner']);
+        const current = this.deviceForm?.value?.assetOwner;
+        if (current && !this.assetOwners.includes(current)) {
+          this.assetOwners.unshift(current);
+        }
+        this.filteredAssetOwners = this.assetOwners;
+      });
+  }
 
   private mapNames(items: any[], keys: string[]): string[] {
     if (!Array.isArray(items)) return [];
@@ -683,6 +1012,14 @@ export class AddDeviceComponent implements OnInit, OnDestroy {
     this.floorInputControl.setValue(this.editData.floor_name || this.editData.floor || '');
     this.dcInputControl.setValue(this.editData.datacenter_name || this.editData.datacentre || '');
     this.rackInputControl.setValue(this.editData.rack_name || this.editData.rackNo || '');
+    this.makeInputControl.setValue(this.editData.make_name || this.editData.make || '');
+    this.deviceTypeInputControl.setValue(this.editData.devicetype_name || this.editData.deviceType || this.editData.device_type || '');
+    this.modelInputControl.setValue(this.editData.model_name || this.editData.modelName || '');
+    this.assetOwnerInputControl.setValue(this.editData.asset_owner_name || this.editData.asset_owner || this.editData.assetOwner || '');
+    this.applicationInputControl.setValue(this.editData.application_name || this.editData.applications_mapped_name || '');
+    this.statusInputControl.setValue(this.editData.status || this.editData.device_status || 'active');
+    this.faceInputControl.setValue(this.editData.face || this.editData.device_face || '');
+    this.assetUserInputControl.setValue(this.normalizeAssetUser(this.editData.asset_user || this.editData.assetUser || ''));
   }
 
   private prefetchDependentData() {

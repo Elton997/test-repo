@@ -213,7 +213,7 @@ export class ListService {
 
   updateDevice(deviceName: string, payload: any) {
     // PUT /api/dcim/update/{name}?entity=devices with JSON body
-    return this.http.put(`${this.baseUrl}/update/${deviceName}?entity=devices`, payload, this.options)
+    return this.http.put(`${this.baseUrl}/update/${encodeURIComponent(deviceName)}?entity=devices`, payload, this.options)
       .pipe(
         catchError((error) => {
           console.error('Error while updating device:', error);

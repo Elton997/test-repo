@@ -19,10 +19,16 @@
         <!-- Make Name -->
         <div class="form-row">
           <label class="form-label">Make Name <span class="required">*</span></label>
-          <select formControlName="makeName">
-            <option value="">Select make...</option>
-            <option *ngFor="let v of makes" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" placeholder="Select make..." class="mat-input-element"
+                 [matAutocomplete]="autoMake"
+                 (input)="onSearch($event)"
+                 [formControl]="makeInputControl"
+                 (focusout)="onFieldBlur('makeName')"/>
+          <mat-autocomplete #autoMake="matAutocomplete" (optionSelected)="getMake($event)">
+            <mat-option *ngFor="let v of filteredMakes" [value]="v">
+              {{ v }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && deviceTypeForm.get('makeName')?.errors?.['required']">
             This field is required
           </span>
@@ -40,7 +46,7 @@
       </div>
 
       <div class="btn-row">
-        <button mat-flat-button color="warn" (click)="onCancel()">Cancel</button>
+        <button mat-stroked-button type="button" class="reset-btn" (click)="resetForm()">Reset</button>
         <button mat-flat-button color="primary">
           {{ editData ? 'Update' : 'Save' }}
         </button>

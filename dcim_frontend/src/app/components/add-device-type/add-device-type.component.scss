@@ -108,4 +108,12 @@
     border: 1px solid #0ea5a4;
     color: #0ea5a4;
   }
+
+  /* Reset button navy styling */
+  .reset-btn {
+    --mdc-theme-primary: #040405;
+    color: #fdfdfd !important;
+    border-color: #07090c !important;
+    background-color: #028488;
+  }
 }

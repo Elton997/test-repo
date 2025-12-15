@@ -16,10 +16,13 @@
         <!-- Status -->
         <div class="form-row">
           <label class="form-label">Status <span class="required">*</span></label>
-          <select formControlName="status" [class.placeholder]="!deviceForm.value.status">
-            <option value="">Select status</option>
-            <option *ngFor="let s of statuses" [ngValue]="s">{{ s }}</option>
-          </select>
+          <input type="text" placeholder="Select status..." class="mat-input-element" [matAutocomplete]="autoStatus"
+            (input)="onSearch($event,'status')" [formControl]="statusInputControl" (focusout)="onFieldBlur('status')"/>
+          <mat-autocomplete #autoStatus="matAutocomplete" (optionSelected)="getStatus($event)">
+            <mat-option *ngFor="let s of filteredStatuses" [value]="s">
+              {{ s }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['status'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -37,10 +40,13 @@
         <!-- Face -->
         <div class="form-row">
           <label class="form-label">Face <span class="required">*</span></label>
-          <select formControlName="face" [class.placeholder]="!deviceForm.value.face">
-            <option value="">Select</option>
-            <option *ngFor="let f of faceOptions" [ngValue]="f">{{ f }}</option>
-          </select>
+          <input type="text" placeholder="Select face..." class="mat-input-element" [matAutocomplete]="autoFace"
+            (input)="onSearch($event,'face')" [formControl]="faceInputControl" (focusout)="onFieldBlur('face')"/>
+          <mat-autocomplete #autoFace="matAutocomplete" (optionSelected)="getFace($event)">
+            <mat-option *ngFor="let f of filteredFaces" [value]="f">
+              {{ f }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['face'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -56,7 +62,7 @@
         <div class="form-row">
           <label class="form-label">Building <span class="required">*</span></label>
           <input type="text" placeholder="Select building..." class="mat-input-element" [matAutocomplete]="autoBuilding"
-            (input)="onSearch($event,'building')" [formControl]="buildingInputControl"/>
+            (input)="onSearch($event,'building')" [formControl]="buildingInputControl" (focusout)="onFieldBlur('building')"/>
           <mat-autocomplete #autoBuilding="matAutocomplete" (optionSelected)="getWings($event)">
             <mat-option *ngFor="let b of filteredBuildings" [value]="b.name">
               {{ b.name }}
@@ -73,7 +79,7 @@
           <input type="text"
             [placeholder]="deviceForm.value.building ? 'Select wing... ' : 'Please select building first'"
             class="mat-input-element" [matAutocomplete]="autoWing" (input)="onSearch($event,'wing')"
-            [formControl]="wingInputControl" />
+            [formControl]="wingInputControl" (focusout)="onFieldBlur('wing')" />
           <mat-autocomplete #autoWing="matAutocomplete" (optionSelected)="getFloors($event)">
             <mat-option *ngFor="let w of filteredWings" [value]="w.name">
               {{ w.name }}
@@ -89,7 +95,7 @@
           <label class="form-label">Floor <span class="required">*</span></label>
           <input type="text" [placeholder]="deviceForm.value.wing ? 'Select floor... ' : 'Please select wing first'"
             class="mat-input-element" [matAutocomplete]="autoFloor" (input)="onSearch($event,'floor')"
-            [formControl]="floorInputControl" />
+            [formControl]="floorInputControl" (focusout)="onFieldBlur('floor')" />
           <mat-autocomplete #autoFloor="matAutocomplete" (optionSelected)="getDataCenters($event)">
             <mat-option *ngFor="let f of filteredFloors" [value]="f.name">
               {{ f.name }}
@@ -106,7 +112,7 @@
           <input type="text"
             [placeholder]="deviceForm.value.floor ? 'Select data center... ' : 'Please select floor first'"
             class="mat-input-element" [matAutocomplete]="autoDC" (input)="onSearch($event,'datacenter')"
-            [formControl]="dcInputControl" />
+            [formControl]="dcInputControl" (focusout)="onFieldBlur('datacentre')" />
           <mat-autocomplete #autoDC="matAutocomplete" (optionSelected)="getRacks($event)">
             <mat-option *ngFor="let d of filteredDatacentres" [value]="d.name">
               {{ d.name }}
@@ -123,7 +129,7 @@
           <input type="text"
             [placeholder]="deviceForm.value.datacentre ? 'Select rack... ' : 'Please select data center first'"
             class="mat-input-element" [matAutocomplete]="autoRack" (input)="onSearch($event,'rack')"
-            [formControl]="rackInputControl" />
+            [formControl]="rackInputControl" (focusout)="onFieldBlur('rackNo')" />
           <mat-autocomplete #autoRack="matAutocomplete" (optionSelected)="setRack($event)">
             <mat-option *ngFor="let r of filteredRacks" [value]="r.name">
               {{ r.name }}
@@ -137,10 +143,13 @@
         <!-- Make: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Make <span class="required">*</span></label>
-          <select formControlName="make" [class.placeholder]="!deviceForm.value.make">
-            <option value="">Select make...</option>
-            <option *ngFor="let v of makes" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" placeholder="Select make..." class="mat-input-element" [matAutocomplete]="autoMake"
+            (input)="onSearch($event,'make')" [formControl]="makeInputControl" (focusout)="onFieldBlur('make')"/>
+          <mat-autocomplete #autoMake="matAutocomplete" (optionSelected)="getMake($event)">
+            <mat-option *ngFor="let m of filteredMakes" [value]="m">
+              {{ m }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['make'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -149,10 +158,15 @@
         <!-- Device Type: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Device Type <span class="required">*</span></label>
-          <select formControlName="deviceType" [disabled]="!deviceForm.value.make" [class.placeholder]="!deviceForm.value.deviceType">
-            <option value="">{{ deviceForm.value.make ? 'Select device type...' : 'Please select make first' }}</option>
-            <option *ngFor="let v of deviceTypes" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text"
+            [placeholder]="deviceForm.value.make ? 'Select device type...' : 'Please select make first'"
+            class="mat-input-element" [matAutocomplete]="autoDeviceType" (input)="onSearch($event,'deviceType')"
+            [formControl]="deviceTypeInputControl" [disabled]="!deviceForm.value.make" (focusout)="onFieldBlur('deviceType')" />
+          <mat-autocomplete #autoDeviceType="matAutocomplete" (optionSelected)="getDeviceType($event)">
+            <mat-option *ngFor="let d of filteredDeviceTypes" [value]="d">
+              {{ d }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['deviceType'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -161,10 +175,15 @@
         <!-- Model Name: will be fetched from api-->
         <div class="form-row">
           <label class="form-label">Model Name <span class="required">*</span></label>
-          <select formControlName="modelName" [disabled]="!deviceForm.value.deviceType" [class.placeholder]="!deviceForm.value.modelName">
-            <option value="">{{ deviceForm.value.deviceType ? 'Select model...' : 'Please select device type first' }}</option>
-            <option *ngFor="let v of models" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text"
+            [placeholder]="deviceForm.value.deviceType ? 'Select model...' : 'Please select device type first'"
+            class="mat-input-element" [matAutocomplete]="autoModel" (input)="onSearch($event,'model')"
+            [formControl]="modelInputControl" [disabled]="!deviceForm.value.deviceType" (focusout)="onFieldBlur('modelName')" />
+          <mat-autocomplete #autoModel="matAutocomplete" (optionSelected)="getModel($event)">
+            <mat-option *ngFor="let m of filteredModels" [value]="m">
+              {{ m }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['modelName'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -182,10 +201,13 @@
         <!-- Asset Owner -->
         <div class="form-row">
           <label class="form-label">Asset Owner <span class="required">*</span></label>
-          <select formControlName="assetOwner" [class.placeholder]="!deviceForm.value.assetOwner">
-            <option value="">Select asset owner...</option>
-            <option *ngFor="let v of assetOwners" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" placeholder="Select asset owner..." class="mat-input-element" [matAutocomplete]="autoAssetOwner"
+            (input)="onSearch($event,'assetOwner')" [formControl]="assetOwnerInputControl" (focusout)="onFieldBlur('assetOwner')"/>
+          <mat-autocomplete #autoAssetOwner="matAutocomplete" (optionSelected)="getAssetOwner($event)">
+            <mat-option *ngFor="let a of filteredAssetOwners" [value]="a">
+              {{ a }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['assetOwner'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -194,10 +216,13 @@
         <!-- Asset User -->
         <div class="form-row">
           <label class="form-label">Asset User <span class="required">*</span></label>
-          <select formControlName="assetUser" [class.placeholder]="!deviceForm.value.assetUser">
-            <option value="">Select asset user...</option>
-            <option *ngFor="let v of assetUsers" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" placeholder="Select asset user..." class="mat-input-element" [matAutocomplete]="autoAssetUser"
+            (input)="onSearch($event,'assetUser')" [formControl]="assetUserInputControl" (focusout)="onFieldBlur('assetUser')"/>
+          <mat-autocomplete #autoAssetUser="matAutocomplete" (optionSelected)="getAssetUserSelection($event)">
+            <mat-option *ngFor="let v of filteredAssetUsers" [value]="v">
+              {{ v }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['assetUser'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -206,10 +231,13 @@
         <!-- Application -->
         <div class="form-row">
           <label class="form-label">Application <span class="required">*</span></label>
-          <select formControlName="applicationName" [class.placeholder]="!deviceForm.value.applicationName">
-            <option value="">Select</option>
-            <option *ngFor="let v of applicationNames" [ngValue]="v">{{ v }}</option>
-          </select>
+          <input type="text" placeholder="Select application..." class="mat-input-element" [matAutocomplete]="autoApplication"
+            (input)="onSearch($event,'application')" [formControl]="applicationInputControl" (focusout)="onFieldBlur('applicationName')"/>
+          <mat-autocomplete #autoApplication="matAutocomplete" (optionSelected)="getApplication($event)">
+            <mat-option *ngFor="let a of filteredApplicationNames" [value]="a">
+              {{ a }}
+            </mat-option>
+          </mat-autocomplete>
           <span class="error" *ngIf="submitAttempted && f['applicationName'].errors?.['required']">
             This field needs to be selected
           </span>
@@ -281,7 +309,7 @@
       </div>
 
       <div class="btn-row">
-        <button mat-flat-button color="warn" (click)="onCancel()">Cancel</button>
+        <button mat-stroked-button type="button" class="reset-btn" (click)="resetForm()">Reset</button>
         <button mat-flat-button color="primary">
           {{ editData ? 'Update' : 'Save' }}
         </button>
