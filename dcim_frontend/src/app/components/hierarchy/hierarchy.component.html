@@ -1,0 +1,352 @@
+<div class="hierarchy-container">
+    <!-- Left Sidebar: Tree -->
+    <div class="tree-sidebar">
+        <h2>Asset Explorer</h2>
+
+        <div class="global-search-container" style="padding: 0 16px; margin-bottom: 10px;">
+            <mat-form-field appearance="outline" style="width: 100%; font-size: 14px;">
+                <mat-icon matPrefix>search</mat-icon>
+                <input type="text" placeholder="Search hierarchy..." matInput [formControl]="globalSearchControl"
+                    [matAutocomplete]="auto">
+                <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn"
+                    (optionSelected)="onGlobalOptionSelected($event)">
+                    <mat-option *ngFor="let option of filteredGlobalOptions | async" [value]="option">
+                        <span>{{ option.name }}</span>
+                        <small style="opacity: 0.7; margin-left: 8px;">{{ option.type }}</small>
+                    </mat-option>
+                </mat-autocomplete>
+            </mat-form-field>
+        </div>
+
+        <div *ngIf="isLoading" class="loader-container">
+            <mat-spinner diameter="40"></mat-spinner>
+        </div>
+
+        <mat-tree [dataSource]="dataSource" [treeControl]="treeControl" class="asset-tree">
+            <!-- Leaf Node -->
+            <mat-tree-node *matTreeNodeDef="let node" matTreeNodeToggle>
+                <button mat-icon-button disabled></button>
+                <div class="node-content" [class.selected]="selectedNode === node" (click)="selectNode(node)">
+                    <mat-icon class="node-icon type-{{node.type | lowercase}}">
+                        {{ node.type === 'Rack' ? 'dns' : 'circle' }}
+                    </mat-icon>
+                    <span class="node-label" [matTooltip]="node.name" matTooltipPosition="right">{{ node.name }}</span>
+                    <span class="node-type">{{ node.type }}</span>
+                </div>
+            </mat-tree-node>
+
+            <!-- Expandable Node -->
+            <mat-nested-tree-node *matTreeNodeDef="let node; when: hasChild">
+                <div class="mat-tree-node">
+                    <button mat-icon-button matTreeNodeToggle [attr.aria-label]="'Toggle ' + node.name">
+                        <mat-icon class="mat-icon-rtl-mirror">
+                            {{treeControl.isExpanded(node) ? 'expand_more' : 'chevron_right'}}
+                        </mat-icon>
+                    </button>
+                    <div class="node-content" [class.selected]="selectedNode === node" (click)="selectNode(node)">
+                        <mat-icon class="node-icon type-{{node.type | lowercase}}">
+                            {{ node.type === 'Location' ? 'public' :
+                            node.type === 'Building' ? 'domain' :
+                            node.type === 'Wing' ? 'meeting_room' :
+                            node.type === 'Floor' ? 'layers' :
+                            node.type === 'Datacenter' ? 'storage' : 'dns'
+                            }}
+                        </mat-icon>
+                        <span class="node-label" [matTooltip]="node.name" matTooltipPosition="right">{{ node.name
+                            }}</span>
+                        <span class="node-type">{{ node.type }}</span>
+                    </div>
+                </div>
+                <!-- There is inline padding applied to this div using CSS class -->
+                <div [class.example-tree-invisible]="!treeControl.isExpanded(node)" role="group">
+                    <ng-container matTreeNodeOutlet></ng-container>
+                </div>
+            </mat-nested-tree-node>
+        </mat-tree>
+    </div>
+
+    <!-- Right: Detail View -->
+    <div class="detail-view">
+        <div class="top-bar" *ngIf="selectedNode">
+            <h1>
+                <mat-icon class="title-icon">{{ getNodeIcon(selectedNode.type) }}</mat-icon>
+                {{ selectedNode.type }} : {{ selectedNode.name }}
+                <span class="status-indicator" *ngIf="selectedNode.status"
+                    [class.status-active]="selectedNode.status === 'active'"
+                    [class.status-passive]="selectedNode.status !== 'active'">
+                    <mat-icon>{{ selectedNode.status === 'active' ? 'check_circle' : 'error' }}</mat-icon>
+                    <span>{{ (selectedNode.status || 'Operational') | titlecase }}</span>
+                </span>
+            </h1>
+            <div class="actions">
+                <button mat-raised-button color="primary" [routerLink]="['add']"
+                    *ngIf="selectedNode.type === 'Location'">Add Location</button>
+
+                <button mat-raised-button color="primary" *ngIf="selectedNode.type === 'Rack'"
+                    (click)="viewRackLayout()">
+                    <mat-icon style="margin-right: 8px;">view_module</mat-icon>
+                    View Rack Layout
+                </button>
+            </div>
+        </div>
+
+        <div class="content-area" *ngIf="selectedNode; else emptyState">
+            <mat-tab-group animationDuration="0ms">
+                <mat-tab label="Overview">
+                    <div class="tab-content" style="padding-top: 16px;">
+                        <!-- Summary Header Row -->
+                        <div class="summary-header">
+                            <div class="summary-stat">
+                                <div class="stat-icon capacity">
+                                    <mat-icon>storage</mat-icon>
+                                </div>
+                                <div class="stat-details">
+                                    <span class="label">Total Capacity</span>
+                                    <span class="value">{{ overviewData?.space_stats?.total_space || 0 }} {{
+                                        overviewData?.space_stats?.unit || 'U' }}</span>
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="summary-stat">
+                                <div class="stat-icon utilization">
+                                    <mat-icon>data_usage</mat-icon>
+                                </div>
+                                <div class="stat-details">
+                                    <span class="label">Utilization</span>
+                                    <span class="value">{{ overviewData?.space_stats?.used_space_percent || 0
+                                        }}%</span>
+                                </div>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="summary-stat">
+                                <div class="stat-icon devices">
+                                    <mat-icon>devices</mat-icon>
+                                </div>
+                                <div class="stat-details">
+                                    <span class="label">Total Devices</span>
+                                    <span class="value">{{ overviewData?.device_stats?.total_devices || 0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Dashboard Grid -->
+                        <div class="dashboard-grid" cdkDropList cdkDropListOrientation="mixed"
+                            (cdkDropListDropped)="drop($event)">
+
+                            <mat-card class="dashboard-widget" *ngFor="let widget of widgets" cdkDrag
+                                [style.grid-column]="'span ' + widget.colSpan"
+                                [ngClass]="{'capacity-widget': widget.id === 'capacity', 'planning-widget': widget.id === 'planning', 'status-widget': widget.id === 'status'}">
+
+                                <div class="widget-header" cdkDragHandle style="cursor: move;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <mat-icon style="color: #cbd5e1; cursor: grab;">drag_indicator</mat-icon>
+                                        <h3>{{ widget.title }}</h3>
+                                    </div>
+                                    <div class="header-actions">
+                                        <button mat-icon-button (click)="resizeWidget(widget)"
+                                            matTooltip="Resize Widget" (mousedown)="$event.stopPropagation()">
+                                            <mat-icon>{{ widget.colSpan === 2 ? 'aspect_ratio' : 'fit_screen'
+                                                }}</mat-icon>
+                                        </button>
+                                        <mat-icon *ngIf="widget.id === 'capacity'">storage</mat-icon>
+                                        <mat-icon *ngIf="widget.id === 'status'">monitor_heart</mat-icon>
+                                        <mat-icon *ngIf="widget.id === 'distribution'">bar_chart</mat-icon>
+                                        <mat-icon *ngIf="widget.id === 'planning'">insights</mat-icon>
+                                    </div>
+                                </div>
+
+                                <div class="widget-content" [ngSwitch]="widget.id">
+
+                                    <!-- 1. Capacity Content -->
+                                    <div *ngSwitchCase="'capacity'">
+                                        <div class="progress-circle-container" *ngIf="overviewData?.space_stats">
+                                            <div class="progress-label">
+                                                <span class="current">{{ overviewData?.space_stats?.used_space
+                                                    }}</span>
+                                                <span class="total">/ {{ overviewData?.space_stats?.total_space }}
+                                                    {{
+                                                    overviewData?.space_stats?.unit }}</span>
+                                            </div>
+                                            <div class="custom-progress-track">
+                                                <div class="custom-progress-fill"
+                                                    [style.width.%]="overviewData?.space_stats?.used_space_percent || 0">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="legend-row" *ngIf="overviewData?.space_stats">
+                                            <div class="legend-item">
+                                                <span class="dot used"></span> Used
+                                            </div>
+                                            <div class="legend-item">
+                                                <span class="dot available"></span> Available
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Status Content -->
+                                    <div *ngSwitchCase="'status'" [class.centered-content]="true">
+                                        <div class="status-donuts" *ngIf="overviewData?.device_stats">
+                                            <div class="status-group active-group">
+                                                <div class="status-count">{{
+                                                    overviewData?.device_stats?.active_devices ?? 0 }}
+                                                </div>
+                                                <div class="status-label">Active</div>
+                                            </div>
+                                            <div class="vertical-divider"></div>
+                                            <div class="status-group inactive-group">
+                                                <div class="status-count">{{
+                                                    overviewData?.device_stats?.inactive_devices ?? 0 }}
+                                                </div>
+                                                <div class="status-label">Inactive</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 3. Distribution Content -->
+                                    <div *ngSwitchCase="'distribution'" class="chart-container">
+                                        <canvas #deviceTypeChart></canvas>
+                                    </div>
+
+                                    <!-- 4. Planning Content -->
+                                    <div *ngSwitchCase="'planning'"
+                                        style="height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <div class="planning-stat primary-stat">
+                                            <span class="stat-label">Available Capacity</span>
+                                            <div class="stat-value-group">
+                                                <span class="stat-value">{{ availableSpace }}</span>
+                                                <span class="stat-unit">{{ overviewData?.space_stats?.unit || 'U'
+                                                    }}</span>
+                                            </div>
+                                            <div class="stat-context">
+                                                <mat-icon class="trend-icon up">trending_up</mat-icon>
+                                                <span>Fits ~<strong>{{ expansionPotential }}</strong> new 2U
+                                                    servers</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="divider"></div>
+
+                                        <div class="planning-metric-row">
+                                            <div class="metric-item"
+                                                matTooltip="Average number of IT devices per rack. Higher density suggests efficient vertical space utilization.">
+                                                <span class="metric-label">Avg. Density</span>
+                                                <span class="metric-value">{{ avgDensity }}</span>
+                                                <span class="metric-sub">Dev / Rack</span>
+                                            </div>
+                                            <div class="vertical-sep"></div>
+                                            <div class="metric-item"
+                                                matTooltip="Indicates how scattered available space is. 'Low' means free space is contiguous, allowing easier installation of large chassis (e.g. 4U+ servers).">
+                                                <span class="metric-label">Fragmentation</span>
+                                                <span class="metric-value low">Low</span>
+                                                <span class="metric-sub">Optimal</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </mat-card>
+                        </div>
+
+                        <!-- Secondary Stats: Counts Row (Wings, Floors, etc) -->
+                        <div class="secondary-stats-grid" *ngIf="overviewData?.counts">
+                            <div class="mini-stat-card" *ngIf="(overviewData?.counts?.wings ?? 0) > 0">
+                                <div class="icon-box"><mat-icon>meeting_room</mat-icon></div>
+                                <div class="stat-info">
+                                    <span class="stat-num">{{ overviewData?.counts?.wings }}</span>
+                                    <span class="stat-name">Wings</span>
+                                </div>
+                            </div>
+                            <div class="mini-stat-card" *ngIf="(overviewData?.counts?.floors ?? 0) > 0">
+                                <div class="icon-box"><mat-icon>layers</mat-icon></div>
+                                <div class="stat-info">
+                                    <span class="stat-num">{{ overviewData?.counts?.floors }}</span>
+                                    <span class="stat-name">Floors</span>
+                                </div>
+                            </div>
+                            <div class="mini-stat-card" *ngIf="(overviewData?.counts?.datacenters ?? 0) > 0">
+                                <div class="icon-box"><mat-icon>dns</mat-icon></div>
+                                <!-- Changed icon to dns for datacenter/rows -->
+                                <div class="stat-info">
+                                    <span class="stat-num">{{ overviewData?.counts?.datacenters }}</span>
+                                    <span class="stat-name">Datacenters</span>
+                                </div>
+                            </div>
+                            <div class="mini-stat-card" *ngIf="(overviewData?.counts?.racks ?? 0) > 0">
+                                <div class="icon-box"><mat-icon>grid_view</mat-icon></div>
+                                <div class="stat-info">
+                                    <span class="stat-num">{{ overviewData?.counts?.racks }}</span>
+                                    <span class="stat-name">Racks</span>
+                                </div>
+                            </div>
+                            <div class="mini-stat-card" *ngIf="(overviewData?.counts?.devices ?? 0) > 0">
+                                <div class="icon-box"><mat-icon>devices</mat-icon></div>
+                                <div class="stat-info">
+                                    <span class="stat-num">{{ overviewData?.counts?.devices }}</span>
+                                    <span class="stat-name">Devices</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </mat-tab>
+
+                <mat-tab label="Floorplan" *ngIf="selectedNode?.type === 'Floor'">
+                    <div class="tab-content floorplan-content" style="padding-top: 24px;">
+                        <div class="floorplan-container" [class.fullscreen]="isFullscreen" #floorplanContainer>
+                            <div class="floorplan-header">
+                                <h2 *ngIf="isFullscreen && selectedNode">{{ selectedNode.name }} Floor Plan</h2>
+                                <button mat-stroked-button (click)="toggleFullscreen()">
+                                    <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+                                    {{ isFullscreen ? 'Exit Fullscreen' : 'Fullscreen' }}
+                                </button>
+                            </div>
+
+                            <div *ngIf="isFloorplanLoading" class="loader-container">
+                                <mat-spinner diameter="40"></mat-spinner>
+                            </div>
+
+                            <div *ngIf="!isFloorplanLoading && floorplanData" class="floorplan-layout">
+                                <!-- Loop through Datacenters -->
+                                <div class="datacenter-group" *ngFor="let dc of floorplanData.datacenters">
+                                    <div class="dc-label">{{ dc.name }}</div>
+                                    <div class="room-floor">
+                                        <!-- Render Racks in Aisles (Rows) -->
+                                        <!-- Note: 'aisles' is added dynamically in the component to avoid template loops -->
+                                        <div class="aisle-row" *ngFor="let aisle of $any(dc).aisles; let i = index">
+                                            <div class="aisle-label">Row {{ i + 1 }}</div>
+                                            <div class="rack-row">
+                                                <div class="rack-block" *ngFor="let rack of aisle"
+                                                    (click)="navigateToRack(rack)"
+                                                    [matTooltip]="rack.name + '\n' + (rack.space_used || 0) + '/' + (rack.height || 42) + ' U\nStatus: ' + (rack.status | titlecase)"
+                                                    matTooltipClass="rack-tooltip"
+                                                    [ngClass]="{'status-active': rack.status === 'active', 'status-maintenance': rack.status === 'maintenance', 'status-inactive': rack.status === 'inactive'}">
+                                                    <!-- Visual Rack Top -->
+                                           
+                                                    <div class="server-vent"></div>
+                                                    <span class="rack-id">{{ rack.name | slice:-3 }}</span>
+                                                    <div class="rack-led" [ngClass]="rack.status"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div *ngIf="dc.racks.length === 0" class="no-racks-placeholder">
+                                            Empty DC Room
+                                        </div>
+                                    </div>
+                                </div>
+                                <div *ngIf="floorplanData.datacenters.length === 0" class="no-data">
+                                    No datacenters found on this floor.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </mat-tab>
+            </mat-tab-group>
+        </div>
+
+        <ng-template #emptyState>
+            <div class="empty-state">
+                <mat-icon class="empty-icon">account_tree</mat-icon>
+                <h2>Select an asset to view details</h2>
+            </div>
+        </ng-template>
+    </div>
+</div>
