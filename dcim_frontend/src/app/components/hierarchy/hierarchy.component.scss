@@ -798,369 +798,180 @@
     }
 }
 
-// Floorplan Styles
-.floorplan-content {
-    min-height: 400px;
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: translateZ(20px) rotateX(-15deg) scale(0);
+    }
+
+    80% {
+        transform: translateZ(20px) rotateX(-15deg) scale(1.05);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateZ(20px) rotateX(-15deg) scale(1);
+    }
 }
 
-.floorplan-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
 }
 
-.datacenter-block {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+@keyframes pulse-amber {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    }
 
-    .dc-title {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 0 0 24px 0;
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #1e293b;
+    70% {
+        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+    }
 
-        mat-icon {
-            color: #64748b;
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+// Apply staggered animation to racks
+.rack-block {
+    animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+
+    @for $i from 1 through 60 {
+        &:nth-child(#{$i}) {
+            animation-delay: #{$i * 0.04}s;
         }
     }
 }
 
-.racks-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 20px;
-}
+/* Zazzy Rack Styling Updates */
+.rack-block {
 
-.rack-item {
-    background: #f8fafc;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 12px;
-    height: 160px;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.2s;
-    cursor: default;
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    // Status Colors - Borders
+    // Make gradients glossier
     &.status-active {
-        border-color: #22c55e;
-
-        .rack-name {
-            color: #15803d;
-        }
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%);
     }
 
     &.status-maintenance {
-        border-color: #f59e0b;
-
-        .rack-name {
-            color: #b45309;
-        }
+        background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #d97706 100%);
     }
 
     &.status-inactive {
-        border-color: #94a3b8;
-
-        .rack-name {
-            color: #475569;
-        }
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 50%, #94a3b8 100%);
     }
 
-    .rack-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-
-        .rack-name {
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .rack-u-height {
-            font-size: 11px;
-            color: #64748b;
-            background: #e2e8f0;
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-    }
-
-    .rack-body {
-        flex: 1;
-        background: #e2e8f0;
-        border-radius: 4px;
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 8px;
-
-        // Visualize slots simply as a bar for now or grid lines
-        // Let's add grid lines background
-        background-image: linear-gradient(#cbd5e1 1px, transparent 1px);
-        background-size: 100% 10%; // Roughly 10 chunks
-
-        .usage-fill {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #3b82f6; // Blue fill for used space
-            opacity: 0.8;
-            transition: height 0.5s ease-out;
-        }
-    }
-
-    .rack-footer {
-        text-align: center;
-        font-size: 12px;
-        color: #64748b;
-        font-weight: 500;
-    }
-}
-
-.no-racks,
-.no-data {
-    color: #94a3b8;
-    font-style: italic;
-    padding: 24px;
-    text-align: center;
-    background: #f8fafc;
-    border-radius: 8px;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-.detail-view {
-    animation: fadeIn 0.4s ease-in-out;
-}
-
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: #94a3b8;
-
-    .empty-icon {
-        font-size: 64px;
-        width: 64px;
-        height: 64px;
-        margin-bottom: 24px;
-        opacity: 0.3;
-        color: #0f172a;
-    }
-
-    h2 {
-        font-weight: 600;
-        font-size: 20px;
-        color: #334155;
-    }
-}
-
-.loader-container {
-    display: flex;
-    justify-content: center;
-    padding: 24px;
-}
-
-.status-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    cursor: help;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: background 0.2s ease;
-
+    // Enhanced Hover Glow
     &:hover {
-        background: rgba(0, 0, 0, 0.02);
-    }
+        transform: translateZ(50px) translateY(-8px) rotateX(-15deg) scale(1.05);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.6),
+            0 20px 40px rgba(0, 0, 0, 0.4),
+            0 0 20px rgba(59, 130, 246, 0.4); // Blue glow on hover
+        z-index: 100;
 
-    .status-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-
-        &.active {
-            color: #10b981;
-        }
-
-        &.inactive {
-            color: #ef4444;
-        }
-
-        &.available {
-            color: #3b82f6;
+        // Brighter highlight
+        &::before {
+            background: rgba(255, 255, 255, 0.7);
         }
     }
+}
 
-    .status-text {
-        color: #334155;
-        font-weight: 500;
-    }
+// Pulsing LEDs
+.rack-led.active {
+    background: #4ade80; // Brighter green center
+    animation: pulse-green 2s infinite;
+}
 
-    .status-text-secondary {
+.rack-led.maintenance {
+    background: #fbbf24;
+    animation: pulse-amber 2s infinite;
+}
+
+/* Polished Zoom Controls */
+.zoom-controls {
+    background: white;
+    padding: 4px 6px;
+    border-radius: 999px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+    button {
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+        border-radius: 50%;
         color: #64748b;
-        font-weight: 400;
-        cursor: default;
-    }
-}
 
-/* Resource Planning Widget */
-.planning-widget {
-    .widget-content {
-        padding: 0 16px 16px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .planning-stat.primary-stat {
-        text-align: center;
-        margin-bottom: 24px;
-
-        .stat-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            display: block;
-            margin-bottom: 8px;
+        &:hover:not([disabled]) {
+            background-color: #f1f5f9;
+            color: #0f172a;
         }
 
-        .stat-value-group {
-            display: flex;
-            align-items: baseline;
-            justify-content: center;
-            gap: 6px;
-            margin-bottom: 8px;
-
-            .stat-value {
-                font-size: 48px;
-                font-weight: 700;
-                color: #0f172a;
-                line-height: 1;
-                letter-spacing: -2px;
-            }
-
-            .stat-unit {
-                font-size: 18px;
-                font-weight: 600;
-                color: #94a3b8;
-            }
+        &[disabled] {
+            opacity: 0.4;
         }
 
-        .stat-context {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: #f0fdf4;
-            border-radius: 999px;
-            border: 1px solid #dcfce7;
-            font-size: 13px;
-            color: #166534;
-
-            strong {
-                font-weight: 700;
-            }
-
-            .trend-icon {
-                font-size: 16px;
-                width: 16px;
-                height: 16px;
-
-                &.up {
-                    color: #16a34a;
-                }
-            }
-        }
-    }
-
-    .divider {
-        height: 1px;
-        background: #f1f5f9;
-        margin: 0 16px 16px;
-    }
-
-    .planning-metric-row {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-
-        .vertical-sep {
-            width: 1px;
-            height: 32px;
-            background: #e2e8f0;
-        }
-
-        .metric-item {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .metric-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #94a3b8;
-            text-transform: uppercase;
-        }
-
-        .metric-value {
+        mat-icon {
             font-size: 18px;
-            font-weight: 700;
-            color: #334155;
-
-            &.low {
-                color: #059669;
-                /* Green for good fragmentation */
-            }
-        }
-
-        .metric-sub {
-            font-size: 10px;
-            color: #cbd5e1;
+            width: 18px;
+            height: 18px;
+            line-height: 18px;
         }
     }
 }
 
-/* =======================================
-   Floorplan View Redesign
-======================================= */
+
+// Explicit Click Overlay for Rack
+.rack-click-handler {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% + 20px);
+    /* Extends 20px to cover box-shadow (right) */
+    height: calc(100% + 20px);
+    /* Extends 20px to cover box-shadow (bottom) */
+    z-index: 999;
+    cursor: pointer;
+    background: transparent;
+    border-radius: inherit;
+    /* match parent curvature */
+}
+
+// Floorplan Styles (single source of truth)
+.floorplan-content {
+    min-height: 420px;
+}
+
 .floorplan-container {
+    --fp-surface: #ffffff;
+    --fp-bg: #f8fafc;
+    --fp-grid: rgba(148, 163, 184, 0.08);
+    --fp-shadow: rgba(15, 23, 42, 0.18);
+
+    perspective: 1600px;
+    perspective-origin: center top;
+
     display: flex;
     flex-direction: column;
     gap: 24px;
-    background: white;
+
+    background: var(--fp-bg);
     padding: 24px;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+
+    overflow-x: auto;
+    width: 100%;
 
     &.fullscreen {
         position: fixed;
@@ -1173,336 +984,420 @@
         border: none;
         overflow-y: auto;
         padding: 32px;
-        background: #f8fafc; // Light background for contrast
     }
 }
 
 .floorplan-header {
     display: flex;
-    justify-content: flex-end; // Push toggle to right
+    justify-content: flex-end;
     align-items: center;
-    margin-bottom: 16px;
     gap: 16px;
+    padding: 0 8px;
 
     h2 {
         margin: 0;
-        margin-right: auto; // Push title to left
+        margin-right: auto;
         font-size: 24px;
         font-weight: 700;
         color: #0f172a;
+        letter-spacing: -0.02em;
+    }
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        border-color: #cbd5e1;
+
+        mat-icon {
+            margin: 0;
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+        }
+
+        &:hover {
+            background: #ffffff;
+            color: #0f172a;
+            border-color: #94a3b8;
+        }
+    }
+}
+
+.floorplan-container.fullscreen {
+    .floorplan-header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: rgba(248, 250, 252, 0.92);
+        backdrop-filter: blur(10px);
+        padding: 12px 8px;
+        border-bottom: 1px solid rgba(203, 213, 225, 0.7);
     }
 }
 
 .floorplan-layout {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 0;
+    /* Revert center to avoid clipping left side on overflow */
     align-items: flex-start;
-    /* CRITICAL: Prevent stretching to full width */
+    width: 100%;
 }
 
 .datacenter-group {
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 16px;
-    background: #ffffff;
     position: relative;
+    padding-top: 50px;
+    /* Increased top spacing */
     width: fit-content;
-    /* Ensure it shrinks */
     min-width: min-content;
-
-    /* Optional: striped background to denote floor area */
-    background-image: linear-gradient(45deg, #f8fafc 25%, transparent 25%, transparent 75%, #f8fafc 75%, #f8fafc),
-        linear-gradient(45deg, #f8fafc 25%, transparent 25%, transparent 75%, #f8fafc 75%, #f8fafc);
-    background-size: 20px 20px;
-    background-position: 0 0, 10px 10px;
-
-    .dc-label {
-        position: absolute;
-        top: -12px;
-        left: 16px;
-        background: #0f172a; // Dark slate
-        color: white;
-        padding: 4px 12px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
+    margin: 0;
+    /* Zero space at start (left align), no centering */
+    padding-left: 0;
 }
 
-.rack-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px; // Tight spacing
-    margin-top: 16px; // Space for label
-    align-items: flex-start;
+.dc-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-family: var(--font-primary);
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--dcim-navy);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--dcim-gold);
+    white-space: nowrap;
 }
 
-.rack-block {
-    width: 40px;
-    height: 44px;
-    background: #e2e8f0; // Default inactive
-    border-radius: 4px;
-    border: 1px solid #cbd5e1;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-
-    &:hover {
-        transform: scale(1.15);
-        z-index: 10;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-        border-color: #94a3b8;
-    }
-
-    .rack-id {
-        font-size: 10px;
-        font-weight: 700;
-        color: rgba(0, 0, 0, 0.6);
-        pointer-events: none; // Let click pass through
-        transform: rotate(-90deg) scale(0.9); // Vertical text for tall feel
-        white-space: nowrap;
-    }
-
-    // Status Colors (Background fills)
-    &.status-active {
-        background: #22c55e; // Green-500
-        border-color: #16a34a; // Green-600
-
-        .rack-id {
-            color: rgba(255, 255, 255, 0.9);
-        }
-    }
-
-    &.status-maintenance {
-        background: #f59e0b; // Amber-500
-        border-color: #d97706; // Amber-600
-
-        .rack-id {
-            color: rgba(255, 255, 255, 0.9);
-        }
-    }
-
-    &.status-inactive {
-        background: #94a3b8; // Slate-400
-        border-color: #64748b; // Slate-500
-
-        .rack-id {
-            color: white;
-        }
-    }
-}
-
-.no-racks-placeholder {
-    padding: 24px;
-    width: 100%;
-    text-align: center;
-    color: #94a3b8;
-    font-style: italic;
-    font-size: 13px;
-    border: 2px dashed #e2e8f0;
-    border-radius: 8px;
-}
-
-// Tooltip customization (global or need ::ng-deep)
-::ng-deep .rack-tooltip {
-    background-color: #0f172a !important; // Slate-900
-    font-size: 12px !important;
-    white-space: pre-line !important; // Allow newlines
-    line-height: 1.4 !important;
-    padding: 8px 12px !important;
-    border-radius: 6px !important;
-}
-
-/* =======================================
-   Floorplan View Redesign (Professional)
-======================================= */
-.floorplan-container {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    background: #ffffff;
-    padding: 24px;
-    border-radius: 8px;
-    /* Sharper corners */
-    border: 1px solid #e2e8f0;
-
-    &.fullscreen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 9999;
-        border-radius: 0;
-        border: none;
-        overflow-y: auto;
-        padding: 32px;
-        background: #f1f5f9;
-    }
-}
-
+/* The "platform" */
 .room-floor {
-    padding: 40px;
-    background-color: #f8fafc;
-    /* Subtle Technical Grid */
-    background-image:
-        linear-gradient(#e2e8f0 1px, transparent 1px),
-        linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
-    background-size: 20px 20px;
-    background-position: center top;
-    min-height: 400px;
-    width: fit-content;
-    /* Ensure floor also fits content */
+    position: relative;
+    padding: 44px;
+    border-radius: 20px;
+    background: var(--fp-surface);
+    margin-bottom: -40px;
+    /* Pull next item up to compensate for 3D tilt */
 
-    /* Horizontal Layout for Aisles */
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 32px;
-    /* Reduced gap from 64px */
+    background-image:
+        linear-gradient(var(--fp-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--fp-grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+
+    transform-style: preserve-3d;
+    transform: rotateX(35deg) scale(0.9);
+    /* Stronger tilt for "tower" view */
+    transform-origin: top left;
+    /* Changed from top center to fix alignment */
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        0 10px 18px rgba(15, 23, 42, 0.10),
+        0 40px 70px rgba(15, 23, 42, 0.16);
+}
+
+/* Platform thickness + soft ground shadow */
+.room-floor::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: -22px;
+    height: 26px;
+    border-radius: 0 0 18px 18px;
+    background: linear-gradient(to bottom, #e5e7eb 0%, #cbd5e1 100%);
+    filter: saturate(0.95);
+    z-index: 0;
+}
+
+.room-floor::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: -32px;
+    height: 32px;
+    border-radius: 999px;
+    background: radial-gradient(closest-side, rgba(15, 23, 42, 0.22), transparent 70%);
+    filter: blur(2px);
+    z-index: -1;
+}
+
+/* Aisle slabs */
+.aisle-group {
+    position: relative;
+    margin-bottom: 38px;
+    padding: 30px 34px;
+
+    border-radius: 18px;
+    background: linear-gradient(to bottom, #ffffff 0%, #f1f5f9 100%);
+    border: 1px solid rgba(203, 213, 225, 0.9);
+
+    transform-style: preserve-3d;
+    /* sit above the room-floor but share its plane */
+    transform: translateZ(18px);
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -8px 12px rgba(15, 23, 42, 0.06),
+        0 12px 18px rgba(15, 23, 42, 0.12),
+        0 34px 46px rgba(15, 23, 42, 0.18);
+}
+
+/* Aisle slab thickness + local shadow, mirroring room floor */
+.aisle-group::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -16px;
+    height: 18px;
+    border-radius: 0 0 16px 16px;
+    background: linear-gradient(to bottom, #e5e7eb 0%, #d1d5db 100%);
+    z-index: 0;
+}
+
+.aisle-group::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: -24px;
+    height: 22px;
+    border-radius: 999px;
+    background: radial-gradient(closest-side, rgba(15, 23, 42, 0.18), transparent 70%);
+    filter: blur(1px);
+    // z-index: -1;
 }
 
 .aisle-row {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
     position: relative;
-    padding: 16px 16px 16px 36px;
-    /* Compact padding */
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    /* Solid, fine border */
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    /* Subtle depth */
+    padding: 10px 18px 10px 80px;
+    /* Increased left padding for label separation */
+    transform-style: preserve-3d;
+    /* Fix 3D chain */
+}
 
-    .aisle-label {
-        position: absolute;
-        left: 2px;
-        top: 50%;
-        transform: translateY(-50%) rotate(-90deg);
-        font-size: 10px;
-        font-weight: 700;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-        width: 32px;
-        text-align: center;
-    }
+.aisle-label {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    width: 46px;
+    text-align: center;
+    user-select: none;
+
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    color: var(--dcim-navy);
+    text-transform: uppercase;
+    pointer-events: none;
+    /* Prevent label from blocking clicks/hover on start of row */
 }
 
 .rack-row {
     display: flex;
-    gap: 8px;
-    /* Tighter rack spacing for density */
+    gap: 24px;
+    /* Increased gap for better separation */
     flex-wrap: nowrap;
+    align-items: center;
+    /* Space inside (all 4 sides) */
+    /* Space inside (all 4 sides) */
+    margin: 12px 12px 32px 12px;
+    /* Increased bottom margin */
+
+    /* content blocking fix: remove potential style barriers */
+    /* background: linear-gradient(to right, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.01)); */
+    /* border: 1px solid rgba(0, 0, 0, 0.04); */
+    /* box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03); */
+    transform-style: preserve-3d;
+    /* Fix hit-testing in 3D space */
+    position: relative;
+    /* Ensure z-index applies */
+    z-index: 50;
+    /* Hoist above floor decorations */
 }
 
-/* Detailed Rack Block */
+/* Rack blocks – "fake 3D" via gradients + consistent shadow logic */
 .rack-block {
-    width: 38px;
-    height: 44px;
-    background: #1e293b;
-    /* Slate-800 Dark Cabinet */
-    border-radius: 2px;
-    /* Very slight roundness */
-    border: 1px solid #0f172a;
+    --rack-top: rgba(255, 255, 255, 0.4);
+    --rack-side: rgba(0, 0, 0, 0.2);
+
+    position: relative;
+    z-index: 50;
+    width: 40px;
+    /* Slightly narrower to emphasize height */
+    height: 100px;
+    /* Taller */
+
+    border-radius: 1px;
+    /* Sharp edges */
     cursor: pointer;
-    transition: all 0.15s ease-out;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.2);
-        z-index: 10;
-        border-color: #3b82f6;
-    }
+    transform-style: preserve-3d;
+    transform: translateZ(20px) rotateX(-15deg);
+    /* Base elevation */
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
 
-    /* Server Mesh/Vent Look */
-    .server-vent {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background:
-            repeating-linear-gradient(0deg,
-                transparent,
-                transparent 3px,
-                rgba(255, 255, 255, 0.03) 3px,
-                rgba(255, 255, 255, 0.03) 4px);
-        z-index: 1;
-    }
+    /* Blocky Extrusion via Box Shadow - Deep 3D Effect */
+    box-shadow:
+        1px 1px 0 var(--rack-side),
+        2px 2px 0 var(--rack-side),
+        3px 3px 0 var(--rack-side),
+        4px 4px 0 var(--rack-side),
+        5px 5px 0 var(--rack-side),
+        6px 6px 0 var(--rack-side),
+        7px 7px 0 var(--rack-side),
+        8px 8px 0 var(--rack-side),
+        9px 9px 0 var(--rack-side),
+        10px 10px 0 var(--rack-side),
+        11px 11px 0 var(--rack-side),
+        12px 12px 0 var(--rack-side),
+        13px 13px 0 var(--rack-side),
+        14px 14px 0 var(--rack-side),
+        15px 15px 0 var(--rack-side),
+        16px 16px 0 var(--rack-side),
+        17px 17px 0 var(--rack-side),
+        18px 18px 0 var(--rack-side),
+        19px 19px 0 var(--rack-side),
+        20px 20px 0 var(--rack-side),
+        22px 22px 28px rgba(0, 0, 0, 0.5);
+    /* Deep drop shadow */
 
-    .rack-id {
-        font-size: 9px;
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.5);
-        z-index: 2;
-        transform: rotate(-90deg);
-        pointer-events: none;
-    }
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-    /* Small Status LED */
-    .rack-led {
-        position: absolute;
-        top: 3px;
-        right: 3px;
-        width: 4px;
-        /* Smaller, sharper LED */
-        height: 4px;
-        border-radius: 50%;
-        z-index: 2;
-        box-shadow: 0 0 4px currentColor;
-        /* Glow matches text color */
+.rack-block::before {
+    /* top highlight strip */
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    height: 5px;
+    border-radius: 4px;
+    background: var(--rack-top);
+    pointer-events: none;
+}
 
-        &.active,
-        &.status-active {
-            background: #22c55e;
-            color: #22c55e;
-        }
+.rack-block::after {
+    /* subtle bottom edge vignette for thickness */
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 26px;
+    border-radius: 0 0 8px 8px;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.14) 100%);
+    pointer-events: none;
+}
 
-        &.maintenance,
-        &.status-maintenance {
-            background: #f59e0b;
-            color: #f59e0b;
-        }
+.rack-block:hover {
+    transform: translateZ(48px) translateY(-5px) rotateX(-15deg);
+    z-index: 20;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 18px 32px rgba(0, 0, 0, 0.34);
+}
 
-        &.inactive,
-        &.status-inactive {
-            background: #ef4444;
-            color: #ef4444;
-        }
-    }
+.rack-id {
+    font-size: 14px;
+    /* Increased from 11px */
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.95);
+    transform: rotate(-90deg);
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
 
-    /* Status Bottom Bar for quick scan */
-    &.status-active {
-        border-bottom: 2px solid #22c55e;
-    }
+/* Status palettes */
+.rack-block.status-active {
+    background: linear-gradient(to bottom, #7cc46f 0%, #5bb85d 100%);
+}
 
-    &.status-maintenance {
-        border-bottom: 2px solid #f59e0b;
-    }
+.rack-block.status-maintenance {
+    background: linear-gradient(to bottom, #f5b454 0%, #f59e0b 100%);
+}
 
-    &.status-inactive {
-        border-bottom: 2px solid #64748b;
-    }
-}/* =======================================
+.rack-block.status-inactive {
+    background: linear-gradient(to bottom, #9ca3af 0%, #6b7280 100%);
+}
+
+/* Vent slit + LED */
+.server-vent {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.18);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+}
+
+.rack-led {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    opacity: 0.9;
+    pointer-events: none;
+}
+
+.rack-led.active {
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.9), 0 0 12px rgba(34, 197, 94, 0.6);
+    right: auto;
+    left: 8px;
+}
+
+.rack-led.maintenance {
+    background: #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.9), 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+.rack-led.inactive {
+    background: #94a3b8;
+    box-shadow: 0 0 6px rgba(148, 163, 184, 0.9), 0 0 12px rgba(148, 163, 184, 0.6);
+}
+
+.no-racks-placeholder,
+.no-data {
+    color: #94a3b8;
+    font-style: italic;
+    padding: 24px;
+    text-align: center;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px dashed #e2e8f0;
+}
+
+
+
+
+
+
+
+/* =======================================
    OneNote / Notebook Style Tab Overrides
 ======================================= */
 ::ng-deep .mat-mdc-tab-group {
@@ -1581,5 +1476,79 @@
         z-index: 20;
         box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.02);
         /* Subtle lift */
+    }
+}
+
+/* =======================================
+   Zoom Controls & Responsiveness
+======================================= */
+.zoom-controls {
+    display: flex;
+    gap: 8px;
+    margin-right: 16px;
+    align-items: center;
+
+    /* Responsive adjustments for zoom controls */
+    @media (max-width: 600px) {
+        margin-right: 8px;
+        gap: 4px;
+    }
+}
+
+.zoom-percentage {
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+    color: #64748b;
+}
+
+/* Mobile / Responsive Layout */
+@media (max-width: 960px) {
+    .hierarchy-container {
+        flex-direction: column;
+        overflow-y: auto;
+        /* Allow main container to scroll since we stack */
+    }
+
+    .tree-sidebar {
+        width: 100%;
+        height: 300px;
+        /* Fixed height for tree area on mobile */
+        flex-shrink: 0;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .detail-view {
+        width: 100%;
+        height: auto;
+        /* Let it grow */
+        flex: 1;
+        overflow-y: visible;
+        /* Use main container scroll */
+        padding: 16px;
+    }
+
+    .floorplan-header {
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+
+        h2 {
+            width: 100%;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+
+        .zoom-controls {
+            margin-right: auto;
+            /* Push to left if wrapped */
+            order: 2;
+        }
+
+        button.mat-stroked-button {
+            order: 3;
+        }
     }
 }

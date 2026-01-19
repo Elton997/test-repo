@@ -96,6 +96,7 @@ interface RackSimple {
     space_used: number;
     space_available: number;
     height?: number;
+    tooltipText?: string;
 }
 
 interface DatacenterSimple {
@@ -148,6 +149,7 @@ interface DashboardWidget {
 export class HierarchyComponent implements OnInit, OnDestroy {
     treeControl = new NestedTreeControl<LocationNode>(node => node.children);
     dataSource = new MatTreeNestedDataSource<LocationNode>();
+    fullHierarchy: LocationNode[] = []; // Store full hierarchy for path finding
 
     selectedNode: LocationNode | null = null;
     isLoading = true;
@@ -324,6 +326,7 @@ export class HierarchyComponent implements OnInit, OnDestroy {
         this.http.get<LocationNode[]>(`${environment.apiUrl}/api/dcim/hierarchy`)
             .subscribe({
                 next: (data) => {
+                    this.fullHierarchy = data; // Save full hierarchy
                     let buildings = data.flatMap(location => location.children || []);
 
                     const dashboardLoc = localStorage.getItem('dashboard_location_name');
@@ -540,25 +543,112 @@ export class HierarchyComponent implements OnInit, OnDestroy {
 
         // Also load floorplan if it's a floor
         if (node.type === 'Floor') {
-            this.loadFloorplan(node.id);
+            this.loadFloorplan(node);
         } else {
             this.floorplanData = null;
         }
     }
 
-    loadFloorplan(floorId: number): void {
+    // Cache for floorplans
+    private floorplanCache = new Map<string, FloorLayoutResponse>();
+
+    trackByAisleGroup(index: number, group: any): any {
+        return group.id;
+    }
+
+    trackByRack(index: number, rack: any): any {
+        return rack.id || rack.name;
+    }
+
+    loadFloorplan(node: LocationNode): void {
         this.isFloorplanLoading = true;
-        this.http.get<FloorLayoutResponse>(`${environment.apiUrl}/api/dcim/floors/${floorId}/floorplan`)
+
+        // We need location_id, building_id, wing_id, floor_id
+        // We can find them by traversing the path. Use fullHierarchy to ensure we get Location.
+        const path = this.findPath(this.fullHierarchy, node);
+
+        if (!path) {
+            console.error('Could not find path for node', node);
+            this.isFloorplanLoading = false;
+            return;
+        }
+
+        let locationId: number | undefined;
+        let buildingId: number | undefined;
+        let wingId: number | undefined;
+        let floorId: number | undefined;
+
+        for (const n of path) {
+            if (n.type === 'Location') locationId = n.id;
+            if (n.type === 'Building') buildingId = n.id;
+            if (n.type === 'Wing') wingId = n.id;
+            if (n.type === 'Floor') floorId = n.id;
+        }
+
+        if (!locationId || !buildingId || !wingId || !floorId) {
+            console.error('Missing required hierarchy params for floorplan', { locationId, buildingId, wingId, floorId });
+            this.isFloorplanLoading = false;
+            return;
+        }
+
+        // Cache Key
+        const cacheKey = `${locationId}-${buildingId}-${wingId}-${floorId}`;
+        if (this.floorplanCache.has(cacheKey)) {
+            this.floorplanData = this.floorplanCache.get(cacheKey)!;
+            this.isFloorplanLoading = false;
+            return;
+        }
+
+        this.http.get<DatacenterSimple[]>(`${environment.apiUrl}/api/dcim/floor-plan`, {
+            params: {
+                location_id: locationId.toString(),
+                building_id: buildingId.toString(),
+                wing_id: wingId.toString(),
+                floor_id: floorId.toString()
+            }
+        })
             .subscribe({
-                next: (data) => {
-                    this.floorplanData = data;
+                next: (datacenters) => {
+                    // Manually construct the response object expected by the UI
+                    const processedData: FloorLayoutResponse = {
+                        id: floorId!,
+                        name: node.name,
+                        datacenters: datacenters
+                    };
+
                     // Pre-process aisles to avoid infinite loop in template
-                    if (this.floorplanData && this.floorplanData.datacenters) {
-                        (this.floorplanData as any).datacenters = this.floorplanData.datacenters.map(dc => ({
-                            ...dc,
-                            aisles: this.chunkRacks(dc.racks, 5)
-                        }));
+                    if (processedData.datacenters) {
+                        (processedData as any).datacenters = processedData.datacenters.map(dc => {
+                            // 1. Pre-process racks (add tooltip text)
+                            const processedRacks = dc.racks.map(r => {
+                                const status = r.status ? r.status.charAt(0).toUpperCase() + r.status.slice(1).toLowerCase() : 'Unknown';
+                                const tooltip = `${r.name}\n${r.space_used || 0}/${r.height || 42} U\nStatus: ${status}`;
+                                return { ...r, tooltipText: tooltip };
+                            });
+
+                            // 2. Chunk Racks into Rows (15 per row as requested)
+                            let rows = this.chunkRacks(processedRacks, 15);
+
+                            // 3. Group Rows into Pairs (4 Groups of 2)
+                            const aisleGroups = [];
+                            for (let i = 0; i < rows.length; i += 2) {
+                                aisleGroups.push({
+                                    id: i,
+                                    rows: rows.slice(i, i + 2)
+                                });
+                            }
+
+                            return {
+                                ...dc,
+                                aisleGroups: aisleGroups
+                            };
+                        });
                     }
+
+                    // Store in cache
+                    this.floorplanCache.set(cacheKey, processedData);
+                    this.floorplanData = processedData;
+
                     this.isFloorplanLoading = false;
                 },
                 error: (err) => {
@@ -568,6 +658,10 @@ export class HierarchyComponent implements OnInit, OnDestroy {
                 }
             });
     }
+
+
+
+    zoomLevel = 1.0;
 
     toggleFullscreen(): void {
         this.isFullscreen = !this.isFullscreen;
@@ -593,8 +687,31 @@ export class HierarchyComponent implements OnInit, OnDestroy {
         }
     }
 
+    zoomIn(): void {
+        this.zoomLevel = Math.min(this.zoomLevel + 0.1, 2.0);
+    }
+
+    zoomOut(): void {
+        this.zoomLevel = Math.max(this.zoomLevel - 0.1, 0.5);
+    }
+
+    resetZoom(): void {
+        this.zoomLevel = 1.0;
+    }
+
     navigateToRack(rack: RackSimple): void {
-        this.router.navigate([Menu.Rack_Management, SubMenu.Racks, rack.name]);
+        console.log('Using navigateToRack with rack:', rack);
+        if (!rack || !rack.name) {
+            console.error('Rack or rack name is missing!');
+            return;
+        }
+        const path = ['/', Menu.Rack_Management, SubMenu.Racks, rack.name];
+        console.log('Navigating to path:', path);
+        this.router.navigate(path).then(success => {
+            console.log('Navigation success:', success);
+        }).catch(err => {
+            console.error('Navigation error:', err);
+        });
     }
 
 

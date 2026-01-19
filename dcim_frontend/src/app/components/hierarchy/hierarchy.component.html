@@ -294,6 +294,23 @@
                         <div class="floorplan-container" [class.fullscreen]="isFullscreen" #floorplanContainer>
                             <div class="floorplan-header">
                                 <h2 *ngIf="isFullscreen && selectedNode">{{ selectedNode.name }} Floor Plan</h2>
+                                <div class="zoom-controls">
+                                    <button mat-icon-button (click)="zoomOut()" matTooltip="Zoom Out"
+                                        [disabled]="zoomLevel <= 0.5">
+                                        <mat-icon>remove</mat-icon>
+                                    </button>
+                                    <span class="zoom-percentage">
+                                        {{ (zoomLevel * 100) | number:'1.0-0' }}%
+                                    </span>
+                                    <button mat-icon-button (click)="zoomIn()" matTooltip="Zoom In"
+                                        [disabled]="zoomLevel >= 2.0">
+                                        <mat-icon>add</mat-icon>
+                                    </button>
+                                    <button mat-icon-button (click)="resetZoom()" matTooltip="Reset Zoom"
+                                        *ngIf="zoomLevel !== 1">
+                                        <mat-icon>restart_alt</mat-icon>
+                                    </button>
+                                </div>
                                 <button mat-stroked-button (click)="toggleFullscreen()">
                                     <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
                                     {{ isFullscreen ? 'Exit Fullscreen' : 'Fullscreen' }}
@@ -306,24 +323,24 @@
 
                             <div *ngIf="!isFloorplanLoading && floorplanData" class="floorplan-layout">
                                 <!-- Loop through Datacenters -->
-                                <div class="datacenter-group" *ngFor="let dc of floorplanData.datacenters">
+                                <div class="datacenter-group" *ngFor="let dc of floorplanData.datacenters"
+                                    [style.zoom]="zoomLevel">
                                     <div class="dc-label">{{ dc.name }}</div>
                                     <div class="room-floor">
                                         <!-- Render Racks in Aisles (Rows) -->
-                                        <!-- Note: 'aisles' is added dynamically in the component to avoid template loops -->
-                                        <div class="aisle-row" *ngFor="let aisle of $any(dc).aisles; let i = index">
-                                            <div class="aisle-label">Row {{ i + 1 }}</div>
-                                            <div class="rack-row">
-                                                <div class="rack-block" *ngFor="let rack of aisle"
-                                                    (click)="navigateToRack(rack)"
-                                                    [matTooltip]="rack.name + '\n' + (rack.space_used || 0) + '/' + (rack.height || 42) + ' U\nStatus: ' + (rack.status | titlecase)"
-                                                    matTooltipClass="rack-tooltip"
-                                                    [ngClass]="{'status-active': rack.status === 'active', 'status-maintenance': rack.status === 'maintenance', 'status-inactive': rack.status === 'inactive'}">
-                                                    <!-- Visual Rack Top -->
-                                           
-                                                    <div class="server-vent"></div>
-                                                    <span class="rack-id">{{ rack.name | slice:-3 }}</span>
-                                                    <div class="rack-led" [ngClass]="rack.status"></div>
+                                        <div class="aisle-group" *ngFor="let group of $any(dc).aisleGroups">
+                                            <div class="aisle-row"
+                                                *ngFor="let aisle of group.rows; let rowIndex = index">
+                                                <div class="aisle-label">Row {{ group.id + rowIndex + 1 }}</div>
+                                                <div class="rack-row">
+                                                    <div class="rack-block" (click)="navigateToRack(rack)"
+                                                        *ngFor="let rack of aisle; trackBy: trackByRack"
+                                                        [matTooltip]="rack.tooltipText" matTooltipClass="rack-tooltip"
+                                                        [matTooltipShowDelay]="100"
+                                                        [ngClass]="{'status-active': rack.status === 'active', 'status-maintenance': rack.status === 'maintenance', 'status-inactive': rack.status === 'inactive'}">
+                                                        <div class="server-vent"></div>
+                                                        <span class="rack-id">{{ rack.name | slice:-3 }}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
